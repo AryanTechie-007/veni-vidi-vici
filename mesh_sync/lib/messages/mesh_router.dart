@@ -156,6 +156,15 @@ class MeshRouter {
 
   // --- store and forward ---------------------------------------------------
 
+  /// What we have already handed to each peer, keyed by the peer's advertised
+  /// name rather than its endpoint id.
+  ///
+  /// Nearby regenerates the endpoint id on every reconnect, so it is useless
+  /// for remembering anything across a link bouncing. The advertised name is
+  /// stable, which is what makes each (peer, message) pair transfer once
+  /// however often the connection flaps.
+  final Map<String, Set<String>> _flushedByPeer = {};
+
   /// Pushes the backlog to a peer that just connected.
   ///
   /// This is the mechanism the whole system rests on: a person physically
@@ -163,18 +172,41 @@ class MeshRouter {
   /// at the instant of receipt and a courier carries nothing.
   ///
   /// There is no retry timer anywhere — reconnection is the retry.
-  Future<void> onPeerConnected(String endpointId) async {
+  Future<void> onPeerConnected(String endpointId, String peerName) async {
     final backlog = await store.forwardable(now: now);
     if (backlog.isEmpty) return;
 
+    final alreadySent = _flushedByPeer.putIfAbsent(peerName, () => {});
+    final pending = [
+      for (final message in backlog)
+        if (!alreadySent.contains(message.id)) message,
+    ];
+    if (pending.isEmpty) return;
+
     var sent = 0;
-    for (final message in backlog) {
-      if (await transport.sendTo(endpointId, message.encode())) sent++;
+    for (final message in pending) {
+      if (await transport.sendTo(endpointId, message.encode())) {
+        // Only on success: a transfer that failed mid-flight must be retried
+        // on the next connect, not recorded as delivered.
+        alreadySent.add(message.id);
+        sent++;
+      }
     }
-    _log('flushed $sent/${backlog.length} held message'
-        '${backlog.length == 1 ? '' : 's'} to $endpointId');
+    _log('flushed $sent/${pending.length} held message'
+        '${pending.length == 1 ? '' : 's'} to $peerName');
   }
 
   /// Drops expired seen entries and messages. Safe to call periodically.
-  Future<void> prune() => store.pruneExpired(now: now);
+  Future<void> prune() async {
+    await store.pruneExpired(now: now);
+
+    // Forget flush bookkeeping for messages that no longer exist, so the map
+    // cannot outgrow the store.
+    final live = {
+      for (final message in await store.all()) message.id,
+    };
+    for (final sent in _flushedByPeer.values) {
+      sent.removeWhere((id) => !live.contains(id));
+    }
+  }
 }

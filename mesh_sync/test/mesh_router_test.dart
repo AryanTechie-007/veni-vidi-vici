@@ -152,11 +152,72 @@ void main() {
 
       final before = mesh.nodes['B']!.acceptedCount;
       // Reconnecting re-flushes, but dedup means nothing is accepted twice.
-      await mesh.nodes['A']!.router.onPeerConnected('B');
+      await mesh.nodes['A']!.router.onPeerConnected('B', 'B');
       await mesh.settle();
 
       expect(mesh.nodes['B']!.acceptedCount, before);
       expect(mesh.nodes['B']!.drops, contains(DropReason.duplicate));
+    });
+
+    test('a flapping link stops re-sending the backlog', () async {
+      // The churn case: with no per-peer tracking, every reconnect re-sends
+      // everything held, forever. Correct but pure waste on a throughput-
+      // limited radio.
+      final mesh = FakeMesh();
+      mesh.addNode('A');
+      mesh.addNode('B');
+
+      await mesh.nodes['A']!.router.createSos(txt: 'one');
+      await mesh.nodes['A']!.router.createSos(txt: 'two');
+      await mesh.settle();
+
+      await mesh.connect('A', 'B');
+      final afterFirstFlush = mesh.nodes['A']!.transport.sendCount;
+      expect(afterFirstFlush, 2, reason: 'both held messages go across once');
+
+      // Bounce the link repeatedly.
+      for (var i = 0; i < 5; i++) {
+        mesh.unlink('A', 'B');
+        await mesh.connect('A', 'B');
+      }
+
+      expect(mesh.nodes['A']!.transport.sendCount, afterFirstFlush,
+          reason: 'nothing is re-sent to a peer that already has it');
+      expect(mesh.nodes['B']!.acceptedCount, 2);
+    });
+
+    test('a message created after a flush still reaches the peer', () async {
+      // The reason this is per-message rather than a time-based cooldown: a
+      // new SOS must not be held back by a recent flush.
+      final mesh = FakeMesh();
+      mesh.addNode('A');
+      mesh.addNode('B');
+
+      await mesh.nodes['A']!.router.createSos(txt: 'first');
+      await mesh.connect('A', 'B');
+
+      mesh.unlink('A', 'B');
+      final later = await mesh.nodes['A']!.router.createSos(txt: 'second');
+      await mesh.connect('A', 'B');
+
+      expect(await mesh.nodes['B']!.held(later.id), isNotNull);
+    });
+
+    test('a failed transfer is retried on the next connect', () async {
+      final mesh = FakeMesh();
+      mesh.addNode('A');
+      mesh.addNode('B');
+
+      final sent = await mesh.nodes['A']!.router.createSos(txt: 'help');
+
+      // Flush to a peer that is not actually in range: sendTo returns false,
+      // so nothing may be recorded as delivered.
+      await mesh.nodes['A']!.router.onPeerConnected('B', 'B');
+      expect(await mesh.nodes['B']!.held(sent.id), isNull);
+
+      await mesh.connect('A', 'B');
+
+      expect(await mesh.nodes['B']!.held(sent.id), isNotNull);
     });
   });
 

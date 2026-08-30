@@ -163,8 +163,8 @@ class FakeMesh {
   /// a real connection event would.
   Future<void> connect(String a, String b) async {
     link(a, b);
-    await nodes[a]!.router.onPeerConnected(b);
-    await nodes[b]!.router.onPeerConnected(a);
+    await nodes[a]!.router.onPeerConnected(b, b);
+    await nodes[b]!.router.onPeerConnected(a, a);
     await settle();
   }
 

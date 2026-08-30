@@ -59,7 +59,15 @@ abstract interface class MessageStore {
 /// In-memory implementation. Everything is lost on process death, which is why
 /// this is a step towards SQLite rather than the destination.
 class InMemoryMessageStore implements MessageStore {
-  InMemoryMessageStore({int startingSeq = 0}) : _seq = startingSeq;
+  InMemoryMessageStore({int startingSeq = 0, this.onSeqAdvanced})
+      : _seq = startingSeq;
+
+  /// Fired on every increment so the app can persist the counter.
+  ///
+  /// A callback rather than a decorator class because SQLite replaces this
+  /// whole implementation later — a hook beats pass-through boilerplate that
+  /// gets deleted.
+  final void Function(int seq)? onSeqAdvanced;
 
   int _seq;
 
@@ -69,7 +77,11 @@ class InMemoryMessageStore implements MessageStore {
   final Map<String, _StoredMessage> _messages = {};
 
   @override
-  Future<int> nextSeq() async => ++_seq;
+  Future<int> nextSeq() async {
+    final next = ++_seq;
+    onSeqAdvanced?.call(next);
+    return next;
+  }
 
   @override
   Future<bool> hasSeen(String id) async => _seen.containsKey(id);

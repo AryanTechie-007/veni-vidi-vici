@@ -1,16 +1,28 @@
-// MeshSync — a spike to prove out Google Nearby Connections in P2P_CLUSTER mode.
+// MeshSync — offline SOS relay over Google Nearby Connections, P2P_CLUSTER.
 //
-// This file is UI only. The transport lives in mesh_service.dart and is
-// observed through a ChangeNotifier.
+// This file is UI only. The radio lives in mesh_service.dart, the propagation
+// rules in messages/mesh_router.dart, and mesh_app.dart wires them together.
 
 import 'package:flutter/material.dart';
 
-import 'mesh_service.dart';
+import 'device_identity.dart';
+import 'mesh_app.dart';
+import 'ui/log_view.dart';
+import 'ui/responder_screen.dart';
+import 'ui/victim_screen.dart';
 
-void main() => runApp(const MeshSyncApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Identity and the persisted seq counter must be loaded before anything can
+  // create a message, so this happens up front rather than in initState.
+  final app = await MeshApp.create();
+  runApp(MeshSyncApp(app: app));
+}
 
 class MeshSyncApp extends StatelessWidget {
-  const MeshSyncApp({super.key});
+  const MeshSyncApp({super.key, required this.app});
+
+  final MeshApp app;
 
   @override
   Widget build(BuildContext context) {
@@ -21,168 +33,146 @@ class MeshSyncApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const MeshHomePage(),
+      home: MeshHomePage(app: app),
     );
   }
 }
 
 class MeshHomePage extends StatefulWidget {
-  const MeshHomePage({super.key});
+  const MeshHomePage({super.key, required this.app});
+
+  final MeshApp app;
 
   @override
   State<MeshHomePage> createState() => _MeshHomePageState();
 }
 
 class _MeshHomePageState extends State<MeshHomePage> {
-  final MeshService _mesh = MeshService();
-  final TextEditingController _input = TextEditingController();
+  MeshApp get _app => widget.app;
 
   @override
   void dispose() {
-    _mesh.dispose();
-    _input.dispose();
+    _app.dispose();
     super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _input.text.trim();
-    if (text.isEmpty) return;
-    final sent = await _mesh.sendText(text);
-    // Keep the text if it went nowhere, so it isn't silently lost.
-    if (sent > 0) _input.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('MeshSync'),
-        backgroundColor: theme.colorScheme.inversePrimary,
-      ),
-      body: ListenableBuilder(
-        listenable: _mesh,
-        builder: (context, _) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('MeshSync'),
+          backgroundColor: theme.colorScheme.inversePrimary,
+          bottom: const TabBar(
+            tabs: [Tab(text: 'Mesh'), Tab(text: 'Log')],
+          ),
+        ),
+        // One builder covers both notifiers: the coordinator for messages and
+        // role, the service for connection and log changes.
+        body: ListenableBuilder(
+          listenable: Listenable.merge([_app, _app.service]),
+          builder: (context, _) => TabBarView(
+            children: [
+              Column(
                 children: [
-                  _StatusDot(active: _mesh.isRunning),
-                  const SizedBox(width: 8),
+                  _StatusBar(app: _app),
+                  const Divider(height: 1),
                   Expanded(
-                    child: Text(_statusLine(), style: theme.textTheme.bodyMedium),
+                    child: _app.role == MeshRole.responder
+                        ? ResponderScreen(app: _app)
+                        : VictimScreen(app: _app),
                   ),
                 ],
               ),
-            ),
-            if (!_mesh.gpsEnabled)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Location services are off. Nearby will connect unreliably or '
-                  'not at all until you turn GPS on.',
-                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: _mesh.requestPermissions,
-                    child: const Text('Permissions'),
-                  ),
-                  const SizedBox(width: 10),
-                  FilledButton(
-                    onPressed: _mesh.isRunning ? _mesh.stop : _mesh.start,
-                    child: Text(_mesh.isRunning ? 'Stop' : 'Start mesh'),
-                  ),
-                ],
-              ),
-            ),
-            if (_mesh.peers.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final peer in _mesh.peers)
-                        Chip(
-                          label: Text(peer.name),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            const Divider(height: 20),
-            Expanded(child: _buildLog()),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _input,
-                        onSubmitted: (_) => _send(),
-                        textInputAction: TextInputAction.send,
-                        decoration: const InputDecoration(
-                          hintText: 'Message to broadcast',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: _send,
-                      icon: const Icon(Icons.send),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+              LogView(entries: _app.service.log),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  String _statusLine() {
-    final peers = _mesh.peers.length;
-    final pending = _mesh.pendingCount;
-    return '${_mesh.nickname}'
-        ' · ${_mesh.isRunning ? 'advertising + discovering' : 'idle'}'
-        ' · $peers peer${peers == 1 ? '' : 's'}'
-        '${pending == 0 ? '' : ' · $pending pending'}';
-  }
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({required this.app});
 
-  Widget _buildLog() {
-    final entries = _mesh.log;
-    if (entries.isEmpty) {
-      return const Center(child: Text('No activity yet'));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: entries.length,
-      itemBuilder: (context, i) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Text(
-          entries[i].toString(),
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-        ),
+  final MeshApp app;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final service = app.service;
+    final peers = service.peers.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SegmentedButton<MeshRole>(
+            segments: const [
+              ButtonSegment(
+                value: MeshRole.victim,
+                label: Text('Victim'),
+                icon: Icon(Icons.person_outline),
+              ),
+              ButtonSegment(
+                value: MeshRole.responder,
+                label: Text('Responder'),
+                icon: Icon(Icons.medical_services_outlined),
+              ),
+            ],
+            selected: {app.role},
+            onSelectionChanged: (selection) => app.setRole(selection.first),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _StatusDot(active: service.isRunning),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${service.nickname}'
+                  ' · ${service.isRunning ? 'advertising + discovering' : 'idle'}'
+                  ' · $peers peer${peers == 1 ? '' : 's'}'
+                  '${service.pendingCount == 0 ? '' : ' · ${service.pendingCount} pending'}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+          if (!service.gpsEnabled)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Location services are off. Nearby will connect unreliably or '
+                'not at all until you turn GPS on.',
+                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+              ),
+            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              OutlinedButton(
+                onPressed: service.requestPermissions,
+                child: const Text('Permissions'),
+              ),
+              const SizedBox(width: 10),
+              FilledButton(
+                onPressed: service.isRunning ? service.stop : service.start,
+                child: Text(service.isRunning ? 'Stop' : 'Start mesh'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
