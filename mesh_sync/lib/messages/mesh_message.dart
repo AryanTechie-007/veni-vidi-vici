@@ -353,6 +353,65 @@ class MeshMessage {
     );
   }
 
+  /// Acknowledges [sos].
+  ///
+  /// Created automatically by a responder device the moment an SOS enters its
+  /// local store — not by a human tap, so an unattended responder phone still
+  /// confirms.
+  ///
+  /// Carries no [loc]: responders should not broadcast their position to every
+  /// device in range.
+  factory MeshMessage.createAck({
+    required String origin,
+    required String uid,
+    required int seq,
+    required int now,
+    required String sosId,
+  }) {
+    return MeshMessage(
+      core: MessageCore(
+        id: computeId(origin, seq),
+        type: MessageType.ack,
+        rawType: MessageType.ack.wire,
+        origin: origin,
+        uid: uid,
+        seq: seq,
+        ts: now,
+        ref: sosId,
+      ),
+      env: MessageEnvelope(hops: 0, exp: now + kExpirySeconds),
+    );
+  }
+
+  /// Closes the incident referenced by [sosId].
+  ///
+  /// Emitted by the original victim marking themselves safe, or by a responder
+  /// closing the incident. A receiving node deletes the referenced message and
+  /// refuses to accept it again.
+  factory MeshMessage.createCancel({
+    required String origin,
+    required String uid,
+    required int seq,
+    required int now,
+    required String sosId,
+    required CancelReason reason,
+  }) {
+    return MeshMessage(
+      core: MessageCore(
+        id: computeId(origin, seq),
+        type: MessageType.cancel,
+        rawType: MessageType.cancel.wire,
+        origin: origin,
+        uid: uid,
+        seq: seq,
+        ts: now,
+        ref: sosId,
+        reason: reason,
+      ),
+      env: MessageEnvelope(hops: 0, exp: now + kExpirySeconds),
+    );
+  }
+
   /// The next copy to hand onward. [core] is carried by reference — it is
   /// frozen, so sharing it is the point.
   MeshMessage incrementHops() => MeshMessage(

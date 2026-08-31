@@ -22,15 +22,29 @@ class ResponderScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: incidents.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, i) => _IncidentTile(message: incidents[i]),
+      itemBuilder: (context, i) => _IncidentTile(
+        message: incidents[i],
+        acked: app.isAcked(incidents[i].id),
+        onClose: () => app.cancel(incidents[i].id, CancelReason.rescued),
+      ),
     );
   }
 }
 
 class _IncidentTile extends StatelessWidget {
-  const _IncidentTile({required this.message});
+  const _IncidentTile({
+    required this.message,
+    required this.acked,
+    required this.onClose,
+  });
 
   final MeshMessage message;
+
+  /// This device ACKs automatically on receipt, so this is normally true —
+  /// it is shown so an unacknowledged incident stands out.
+  final bool acked;
+
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +60,15 @@ class _IncidentTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      title: Text(core.cat?.wire ?? 'UNKNOWN'),
+      title: Row(
+        children: [
+          Text(core.cat?.wire ?? 'UNKNOWN'),
+          if (acked) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
+          ],
+        ],
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,7 +83,37 @@ class _IncidentTile extends StatelessWidget {
         ],
       ),
       isThreeLine: core.txt != null,
+      trailing: TextButton(
+        onPressed: () => _confirmClose(context),
+        child: const Text('Close'),
+      ),
     );
+  }
+
+  /// Closing an incident purges it from every device that receives the CANCEL,
+  /// so it is confirmed rather than a single tap.
+  Future<void> _confirmClose(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Close this incident?'),
+        content: const Text(
+          'A CANCEL floods to every device in the mesh and deletes this '
+          'incident from their storage. It cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep open'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Close incident'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onClose();
   }
 
   static Color _colorFor(Category? cat, ThemeData theme) => switch (cat) {

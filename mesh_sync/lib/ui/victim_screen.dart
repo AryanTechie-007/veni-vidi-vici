@@ -63,6 +63,11 @@ class VictimScreen extends StatelessWidget {
               itemBuilder: (context, i) => _SentTile(
                 message: mine[i],
                 peerCount: app.service.peers.length,
+                acked: app.isAcked(mine[i].id),
+                onSafe: () => app.cancel(
+                  mine[i].id,
+                  CancelReason.selfResolved,
+                ),
               ),
             ),
           ),
@@ -72,29 +77,58 @@ class VictimScreen extends StatelessWidget {
 }
 
 class _SentTile extends StatelessWidget {
-  const _SentTile({required this.message, required this.peerCount});
+  const _SentTile({
+    required this.message,
+    required this.peerCount,
+    required this.acked,
+    required this.onSafe,
+  });
 
   final MeshMessage message;
   final int peerCount;
+  final bool acked;
+  final VoidCallback onSafe;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Wording matters. Without ACK there is no delivery confirmation, so this
-    // must not imply one — "relayed" guarantees nothing. When ACK lands, the
-    // genuine "Reached a responder" state needs to look clearly different.
-    final status = peerCount == 0
-        ? 'Sending — no devices in range'
-        : 'Relayed to $peerCount nearby device${peerCount == 1 ? '' : 's'}';
+
+    // "Reached a responder" is the only state that means anything, and it is
+    // deliberately styled unlike the others: "relayed" guarantees nothing, and
+    // the copy must not imply delivery.
+    final String status;
+    final Color color;
+    final IconData icon;
+    if (acked) {
+      status = 'Reached a responder';
+      color = Colors.green.shade700;
+      icon = Icons.check_circle;
+    } else if (peerCount == 0) {
+      status = 'Sending — no devices in range';
+      color = theme.hintColor;
+      icon = Icons.radio_button_unchecked;
+    } else {
+      status = 'Relayed to $peerCount nearby device${peerCount == 1 ? '' : 's'}';
+      color = theme.hintColor;
+      icon = Icons.wifi_tethering;
+    }
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: color),
       title: Text(message.core.txt ?? message.core.cat?.wire ?? 'SOS'),
-      subtitle: Text('$status · ${_elapsed(message.core.ts)}'),
-      trailing: Text(
-        message.id.substring(0, 6),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(fontFamily: 'monospace', color: theme.hintColor),
+      subtitle: Text(
+        // Elapsed time is shown throughout so a long silence is visible
+        // rather than ambiguous.
+        '$status · ${_elapsed(message.core.ts)}',
+        style: TextStyle(
+          color: color,
+          fontWeight: acked ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: TextButton(
+        onPressed: onSafe,
+        child: const Text('I am safe'),
       ),
     );
   }

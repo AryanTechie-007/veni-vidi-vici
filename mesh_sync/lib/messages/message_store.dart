@@ -42,9 +42,27 @@ abstract interface class MessageStore {
 
   Future<MeshMessage?> get(String id);
 
+  /// Records that the message with id [sosId] has been acknowledged.
+  ///
+  /// Kept separately from the message itself because an ACK routinely arrives
+  /// before the SOS it references — out-of-order arrival is normal and must
+  /// never block acceptance.
+  Future<void> markAcked(String sosId);
+
+  Future<bool> isAcked(String id);
+
+  /// Records that [sosId] has been cancelled, so it is refused if a peer
+  /// offers it again after we have deleted it.
+  Future<void> markCancelled(String sosId);
+
+  Future<bool> isCancelled(String id);
+
   /// Everything still worth pushing to peers at [now].
   ///
-  /// Step 5 will also exclude ACK-suppressed messages here.
+  /// Excludes anything acknowledged: once a node holds both an SOS and an ACK
+  /// referencing it, that SOS has been delivered and stops consuming
+  /// bandwidth. It stays in storage — a responder arriving later still wants
+  /// the record.
   Future<List<MeshMessage>> forwardable({required int now});
 
   /// All held messages, expired or not — for the UI.
@@ -73,6 +91,13 @@ class InMemoryMessageStore implements MessageStore {
 
   /// id -> unix seconds after which the entry may be dropped.
   final Map<String, int> _seen = {};
+
+  /// SOS ids we have seen an ACK for. Populated even when we do not hold the
+  /// referenced message yet.
+  final Set<String> _acked = {};
+
+  /// SOS ids we have seen a CANCEL for.
+  final Set<String> _cancelled = {};
 
   final Map<String, _StoredMessage> _messages = {};
 
@@ -134,9 +159,22 @@ class InMemoryMessageStore implements MessageStore {
   Future<MeshMessage?> get(String id) async => _messages[id]?.message;
 
   @override
+  Future<void> markAcked(String sosId) async => _acked.add(sosId);
+
+  @override
+  Future<bool> isAcked(String id) async => _acked.contains(id);
+
+  @override
+  Future<void> markCancelled(String sosId) async => _cancelled.add(sosId);
+
+  @override
+  Future<bool> isCancelled(String id) async => _cancelled.contains(id);
+
+  @override
   Future<List<MeshMessage>> forwardable({required int now}) async => [
         for (final stored in _messages.values)
-          if (stored.localExpiry > now) stored.message,
+          if (stored.localExpiry > now && !_acked.contains(stored.message.id))
+            stored.message,
       ];
 
   @override

@@ -17,6 +17,9 @@ enum DropReason {
   malformed,
   duplicate,
   expired,
+
+  /// A message a CANCEL already closed. Kept out of the store for good.
+  cancelled,
 }
 
 class MeshRouter {
@@ -53,6 +56,16 @@ class MeshRouter {
 
   /// Human-readable activity, for the app's log panel.
   void Function(String line)? onLog;
+
+  /// When true, this device auto-emits an ACK the moment an SOS enters its
+  /// store. Not triggered by a human tap, so an unattended responder phone
+  /// still confirms.
+  bool isResponder = false;
+
+  /// Fired when the state of a referenced message changes — an ACK or CANCEL
+  /// landed for it. The UI uses this to move an SOS out of "relayed" and into
+  /// a state that actually means something.
+  void Function(String sosId)? onReferencedChanged;
 
   void _log(String line) => onLog?.call(line);
 
@@ -103,6 +116,7 @@ class MeshRouter {
     await store.markSeen(message.id, expiresAt: localExpiry);
     await store.put(message, localExpiry: localExpiry);
     onAccepted?.call(message);
+    await _applyEffects(message);
   }
 
   // --- receiving -----------------------------------------------------------
@@ -141,6 +155,14 @@ class MeshRouter {
       return;
     }
 
+    // A CANCEL already closed this incident. Refuse to take it back.
+    if (await store.isCancelled(message.id)) {
+      onDropped?.call(DropReason.cancelled, message.id);
+      await store.markSeen(message.id, expiresAt: message.env.exp);
+      _log('refused cancelled ${message.id}');
+      return;
+    }
+
     // The increment belongs to receipt, not to forwarding: a node one hop from
     // the origin holds the message at hops=1, and hands on that same copy.
     final relayed = message.incrementHops();
@@ -152,6 +174,107 @@ class MeshRouter {
     );
     _log('relayed ${relayed.core.typeWire} ${relayed.id} '
         'hops=${relayed.env.hops} → $peers peer${peers == 1 ? '' : 's'}');
+  }
+
+  /// Applies the meaning of a message once it is in the store.
+  ///
+  /// All three types travel through identical flooding machinery; this is the
+  /// only place where type matters at all. An ACK or CANCEL may arrive at a
+  /// node that has never seen the message it references — out-of-order arrival
+  /// is normal, so the reference is recorded regardless of whether we hold the
+  /// target.
+  Future<void> _applyEffects(MeshMessage message) async {
+    switch (message.core.type) {
+      case MessageType.sos:
+        // A responder confirms automatically, with no human tap, so an
+        // unattended responder phone still acknowledges.
+        if (isResponder && message.core.origin != origin) {
+          await _emitAck(message.id);
+        }
+
+      case MessageType.ack:
+        final ref = message.core.ref;
+        if (ref == null) return;
+        await store.markAcked(ref);
+        onReferencedChanged?.call(ref);
+        _log('ACK for $ref — suppressing further relay of it');
+
+      case MessageType.cancel:
+        final ref = message.core.ref;
+        if (ref == null) return;
+        await _noteCancelBasis(message, ref);
+        await store.markCancelled(ref);
+        // Deletes the message but deliberately leaves the seen entry, which is
+        // what refuses it if a peer offers it again.
+        await store.delete(ref);
+        onReferencedChanged?.call(ref);
+        _log('CANCEL (${message.core.reason?.wire ?? 'no reason'}) for $ref '
+            '— purged from local storage');
+
+      case MessageType.unknown:
+        // Relayed but never acted on, so newer builds can add types without
+        // older ones dropping their traffic.
+        break;
+    }
+  }
+
+  /// Records how trustworthy a CANCEL was, for the log.
+  ///
+  /// The spec's rule is to honour a CANCEL whose origin matches either the
+  /// referenced SOS's origin, or a known responder UID — otherwise any device
+  /// could silence any other device's SOS.
+  ///
+  /// Only the first half is checkable today, and only when we happen to hold
+  /// the referenced message. Nothing on this link is signed, there is no
+  /// responder registry, and `origin` is a plain JSON field any device can
+  /// set, so a responder's CANCEL is indistinguishable from a forged one.
+  ///
+  /// Every CANCEL is therefore honoured. Refusing the unverifiable ones would
+  /// break the main flow — a responder closing someone else's incident — while
+  /// still not stopping a determined forger, who can simply claim the victim's
+  /// origin. This method is the single place to harden once messages are
+  /// signed.
+  Future<void> _noteCancelBasis(MeshMessage cancel, String ref) async {
+    final target = await store.get(ref);
+    if (target != null && cancel.core.origin == target.core.origin) return;
+    _log('honouring unverified CANCEL for $ref from ${cancel.core.origin}');
+  }
+
+  /// Creates and floods an ACK referencing [sosId].
+  Future<MeshMessage> _emitAck(String sosId) async {
+    final seq = await store.nextSeq();
+    final ack = MeshMessage.createAck(
+      origin: origin,
+      uid: uid,
+      seq: seq,
+      now: now,
+      sosId: sosId,
+    );
+    await _accept(ack, receivedAt: now);
+    final peers = await transport.broadcast(ack.encode());
+    _log('auto-ACK ${ack.id} for $sosId → $peers peer${peers == 1 ? '' : 's'}');
+    return ack;
+  }
+
+  /// Closes the incident referenced by [sosId] and floods the CANCEL.
+  Future<MeshMessage> createCancel({
+    required String sosId,
+    required CancelReason reason,
+  }) async {
+    final seq = await store.nextSeq();
+    final cancel = MeshMessage.createCancel(
+      origin: origin,
+      uid: uid,
+      seq: seq,
+      now: now,
+      sosId: sosId,
+      reason: reason,
+    );
+    await _accept(cancel, receivedAt: now);
+    final peers = await transport.broadcast(cancel.encode());
+    _log('CANCEL ${cancel.id} for $sosId (${reason.wire}) → $peers peer'
+        '${peers == 1 ? '' : 's'}');
+    return cancel;
   }
 
   // --- store and forward ---------------------------------------------------

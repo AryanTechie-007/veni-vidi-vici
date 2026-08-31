@@ -25,6 +25,8 @@ class MeshApp extends ChangeNotifier {
     service.onPeerConnected = router.onPeerConnected;
     router.onLog = service.logLine;
     router.onAccepted = _record;
+    router.onReferencedChanged = (_) => notifyListeners();
+    router.isResponder = _identity.role == MeshRole.responder;
 
     _pruneTimer = Timer.periodic(kPruneInterval, (_) => router.prune());
   }
@@ -72,21 +74,44 @@ class MeshApp extends ChangeNotifier {
           if (m.core.type == MessageType.sos && m.core.origin != origin) m,
       ];
 
-  /// What this device has sent itself.
+  /// SOS messages this device sent itself.
   List<MeshMessage> get myMessages => [
         for (final m in _messages)
-          if (m.core.origin == origin) m,
+          if (m.core.origin == origin && m.core.type == MessageType.sos) m,
       ];
 
   void _record(MeshMessage message) {
     _messages.insert(0, message);
+    if (message.core.type == MessageType.ack && message.core.ref != null) {
+      _ackedIds.add(message.core.ref!);
+    }
+    if (message.core.type == MessageType.cancel && message.core.ref != null) {
+      // A cancelled incident is purged from the store, so drop it from the
+      // view too rather than showing a record nothing holds any more.
+      _messages.removeWhere((m) => m.id == message.core.ref);
+    }
     notifyListeners();
   }
 
   Future<void> setRole(MeshRole value) async {
     if (value == role) return;
     await _identity.saveRole(value);
+    router.isResponder = value == MeshRole.responder;
     await service.setRole(value);
+    notifyListeners();
+  }
+
+  /// Whether [sosId] has been acknowledged by some responder.
+  ///
+  /// Synchronous so the UI can call it from `build`; kept in step with the
+  /// store by [MeshRouter.onReferencedChanged].
+  bool isAcked(String sosId) => _ackedIds.contains(sosId);
+
+  final Set<String> _ackedIds = {};
+
+  /// Closes an incident and floods the CANCEL.
+  Future<void> cancel(String sosId, CancelReason reason) async {
+    await router.createCancel(sosId: sosId, reason: reason);
     notifyListeners();
   }
 
