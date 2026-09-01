@@ -72,31 +72,33 @@ MeshSync uses an **exaggerated, cognitive minimalism** layout designed for high-
 
 ## 📝 5. Changelog & Version History
 
+### Changes in Version v0.8:
+1. **Removed Superficial Badge Elements**: Completely removed the "ONLINE / OFFLINE" pill indicators across the Flutter application and preview screens for a cleaner, authentic functional design.
+2. **Simplified Radio Status Display**: Streamlined node call-sign and network description to show real reachable peer counts and clear Start/Stop action buttons.
+3. **Updated Release Documentation**: Appended v0.8 changelog with exact push timestamp.
+
 ### Changes in Version v0.7:
-1. **Terminology Standardization**: Completely removed descriptive color labels ("Linen", "Obsidian") from all UI tooltips, toast notifications, code comments, and documentation in favor of clean, standardized **Light Mode** and **Dark Mode**.
-2. **Complete Project Documentation**: Overhauled `README.md` into comprehensive technical documentation detailing system architecture, packet protocols, role routing, and design guidelines.
+1. **Terminology Standardization**: Removed descriptive color labels ("Linen", "Obsidian") from all UI tooltips, toast notifications, code comments, and documentation in favor of clean, standardized **Light Mode** and **Dark Mode**.
+2. **Complete Technical Documentation**: Overhauled `README.md` into comprehensive technical documentation detailing system architecture, packet protocols, role routing, and design guidelines.
 3. **Refined Serif Typographic Hierarchy**: Polished `Georgia` / `Newsreader` font rules, letter spacings, and heading weights across Flutter components and the web simulator.
-4. **Streamlined Theme Controller**: Verified seamless light/dark mode switching across both native Flutter and localhost preview environments.
-5. **Role Isolation Enforcement**: Validated strict permission separation between Citizen and SAR Responder portals.
 
 ---
 
 ## 💻 6. How to Run Locally
 
-### Option A: Interactive Localhost Web Simulator
-Run the live web preview server on port 8000:
-```powershell
-python -m http.server 8000 --directory preview
-```
-Visit **`http://localhost:8000`** in your browser.
-
-### Option B: Flutter Mobile App
+### Native Flutter Mobile App (Android / iOS)
 ```powershell
 cd mesh_sync
 flutter pub get
 flutter run
 ```
 
+### Localhost Web Simulator (For rapid UI testing)
+```powershell
+python -m http.server 8000 --directory preview
+```
+Visit **`http://localhost:8000`** in your browser.
+
 ---
 
-v.0.7 Push by - Aryan Time - 21.26 IST
+v.0.8 Push by - Aryan Time - 21.36 IST
