@@ -247,34 +247,13 @@ class _MinimalistStatusBar extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            service.nickname,
-                            style: const TextStyle(
-                              fontFamily: 'Georgia',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isRunning ? MeshTheme.sageGreen : theme.dividerColor,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isRunning ? 'ONLINE' : 'OFFLINE',
-                              style: const TextStyle(
-                                fontFamily: 'Georgia',
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        service.nickname,
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(

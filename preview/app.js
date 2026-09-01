@@ -201,7 +201,6 @@ function toggleGps(enable) {
 }
 
 function renderRadioStatus() {
-  const badge = document.getElementById('radioStateBadge');
   const subtext = document.getElementById('radioSubtext');
   const toggleBtn = document.getElementById('radioToggleBtn');
   const nodeNick = document.getElementById('nodeNickname');
@@ -209,15 +208,11 @@ function renderRadioStatus() {
   if (nodeNick) nodeNick.textContent = state.nickname;
 
   if (state.radioRunning) {
-    badge.textContent = 'ONLINE';
-    badge.style.backgroundColor = 'var(--sage)';
     subtext.textContent = `Mesh radio active · ${state.peers.length} reachable peers`;
     toggleBtn.textContent = 'Stop Radio';
     toggleBtn.style.backgroundColor = 'var(--terracotta)';
     toggleBtn.style.color = '#ffffff';
   } else {
-    badge.textContent = 'OFFLINE';
-    badge.style.backgroundColor = 'var(--text-muted)';
     subtext.textContent = 'Radio idle';
     toggleBtn.textContent = 'Start Radio';
     toggleBtn.style.backgroundColor = 'var(--text-color)';

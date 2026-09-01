@@ -299,16 +299,6 @@ body {
   font-weight: 600;
 }
 
-.status-badge {
-  font-size: 9px;
-  font-weight: bold;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background-color: var(--sage);
-  color: #fff;
-  margin-left: 6px;
-}
-
 .radio-subtext {
   font-size: 11px;
   color: var(--text-muted);
