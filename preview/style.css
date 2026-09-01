@@ -1,5 +1,5 @@
 :root {
-  /* Warm Obsidian Dark Mode */
+  /* Dark Mode */
   --bg-color: #0f0e0d;
   --surface-color: #161513;
   --card-color: #1b1917;
@@ -15,7 +15,7 @@
 }
 
 body.light-mode {
-  /* Warm Linen / Parchment Light Mode */
+  /* Light Mode */
   --bg-color: #f7f5f0;
   --surface-color: #ede9e1;
   --card-color: #ffffff;

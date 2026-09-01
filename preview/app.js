@@ -185,8 +185,8 @@ function renderAuthState() {
 function toggleTheme() {
   state.isLightMode = !state.isLightMode;
   document.body.classList.toggle('light-mode', state.isLightMode);
-  document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Obsidian Dark' : 'Linen Light';
-  showToast(`Switched to ${state.isLightMode ? 'Linen Light' : 'Obsidian Dark'} Theme`);
+  document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Dark' : 'Light';
+  showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
 }
 
 function toggleRadio() {

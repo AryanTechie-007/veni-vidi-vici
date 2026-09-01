@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import '../../messages/mesh_message.dart';
 
 /// Cognitive / Exaggerated Minimalism Theme for MeshSync.
-/// Editorial Serif display typography, warm muted organic palette (Obsidian, Linen, Terracotta, Sage).
+/// Editorial Serif display typography, warm muted organic palette (Dark Mode, Light Mode, Terracotta, Sage).
 class MeshTheme {
-  // Warm Dark Palette (Obsidian & Warm Charcoal)
+  // Warm Dark Palette
   static const Color darkBg = Color(0xFF0F0E0D);
   static const Color darkCard = Color(0xFF181715);
   static const Color darkBorder = Color(0xFF2E2C28);
   static const Color darkText = Color(0xFFF4F1EA);
   static const Color darkTextMuted = Color(0xFFA8A39A);
 
-  // Warm Light Palette (Linen & Warm Parchment)
+  // Warm Light Palette
   static const Color lightBg = Color(0xFFF7F5F0);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightBorder = Color(0xFFE3DFD5);

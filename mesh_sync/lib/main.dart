@@ -166,7 +166,7 @@ class _MeshHomePageState extends State<MeshHomePage> {
               isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
               size: 20,
             ),
-            tooltip: isDark ? 'Switch to Linen Light' : 'Switch to Obsidian Dark',
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             onPressed: () {
               themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
             },
