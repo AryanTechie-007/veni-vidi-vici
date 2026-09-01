@@ -66,16 +66,20 @@ MeshSync uses an **exaggerated, cognitive minimalism** layout designed for high-
    - **Light Mode (`#F7F5F0`)**: High-contrast, warm tone for harsh outdoor sunlight.
    - **Terracotta Crimson (`#C93B2B`)**: Single focal emergency accent color.
    - **Sage Green (`#4A6B53`)**: Subdued confirmation and network status indicator.
-4. **Deliberate Whitespace**: Built on a strict 8px grid scale with smooth micro-interactions.
+4. **Deliberate Whitespace & Seamless Radio Lifecycle**: Background mesh radio runs automatically upon launch without manual toggle buttons cluttering the emergency interface.
 
 ---
 
 ## 📝 5. Changelog & Version History
 
+### Changes in Version v0.9:
+1. **Removed Manual Radio Toggle Buttons**: Eliminated the redundant "Start Radio / Stop Radio" control buttons and status cards from both the mobile app and preview screens. The Nearby Connections radio now boots and operates automatically in the background.
+2. **Simplified Interface Hierarchy**: Cleaned up the main screen to dedicate full viewport space to the primary emergency tools (Distress SOS for Citizens, Incident Triage for SAR Teams).
+3. **Appended Release Documentation**: Updated changelog and repository push records.
+
 ### Changes in Version v0.8:
 1. **Removed Superficial Badge Elements**: Completely removed the "ONLINE / OFFLINE" pill indicators across the Flutter application and preview screens for a cleaner, authentic functional design.
 2. **Simplified Radio Status Display**: Streamlined node call-sign and network description to show real reachable peer counts and clear Start/Stop action buttons.
-3. **Updated Release Documentation**: Appended v0.8 changelog with exact push timestamp.
 
 ### Changes in Version v0.7:
 1. **Terminology Standardization**: Removed descriptive color labels ("Linen", "Obsidian") from all UI tooltips, toast notifications, code comments, and documentation in favor of clean, standardized **Light Mode** and **Dark Mode**.
@@ -101,4 +105,4 @@ Visit **`http://localhost:8000`** in your browser.
 
 ---
 
-v.0.8 Push by - Aryan Time - 21.36 IST
+v.0.9 Push by - Aryan Time - 21.40 IST

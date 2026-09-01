@@ -197,124 +197,44 @@ class _MeshHomePageState extends State<MeshHomePage> {
       ),
       body: ListenableBuilder(
         listenable: Listenable.merge([_app, _app.service]),
-        builder: (context, _) => Column(
-          children: [
-            _MinimalistStatusBar(app: _app, isResponder: isResponder),
-            const Divider(height: 1),
-            Expanded(
-              child: isResponder
-                  ? ResponderScreen(app: _app)
-                  : VictimScreen(app: _app),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MinimalistStatusBar extends StatelessWidget {
-  const _MinimalistStatusBar({required this.app, required this.isResponder});
-
-  final MeshApp app;
-  final bool isResponder;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final service = app.service;
-    final peers = service.peers.length;
-    final isRunning = service.isRunning;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      color: theme.scaffoldBackgroundColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Radio Status & Controls Card
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        builder: (context, _) {
+          return Column(
+            children: [
+              if (!service.gpsEnabled)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: MeshTheme.terracottaRed),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        service.nickname,
-                        style: const TextStyle(
-                          fontFamily: 'Georgia',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                      const Icon(Icons.location_off_outlined, color: MeshTheme.terracottaRed, size: 18),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Location services off. Nearby requires GPS to connect.',
+                          style: TextStyle(fontFamily: 'Georgia', fontSize: 12),
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        isRunning
-                            ? 'Mesh radio active · $peers reachable peers'
-                            : 'Radio idle',
-                        style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 12,
-                          color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
-                        ),
+                      TextButton(
+                        onPressed: service.requestPermissions,
+                        child: const Text('Enable', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: MeshTheme.terracottaRed)),
                       ),
                     ],
                   ),
                 ),
-                FilledButton(
-                  onPressed: isRunning ? service.stop : service.start,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: isRunning ? MeshTheme.terracottaRed : theme.colorScheme.onSurface,
-                    foregroundColor: isRunning ? Colors.white : theme.scaffoldBackgroundColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: Text(
-                    isRunning ? 'Stop Radio' : 'Start Radio',
-                    style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (!service.gpsEnabled) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: MeshTheme.terracottaRed),
+              Expanded(
+                child: isResponder
+                    ? ResponderScreen(app: _app)
+                    : VictimScreen(app: _app),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_off_outlined, color: MeshTheme.terracottaRed, size: 18),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Location services off. Nearby Connections requires GPS to establish links.',
-                      style: TextStyle(fontFamily: 'Georgia', fontSize: 12),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: service.requestPermissions,
-                    child: const Text('Enable', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: MeshTheme.terracottaRed)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
+            ],
+          );
+        },
       ),
     );
   }

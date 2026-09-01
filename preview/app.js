@@ -189,38 +189,9 @@ function toggleTheme() {
   showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
 }
 
-function toggleRadio() {
-  state.radioRunning = !state.radioRunning;
-  renderRadioStatus();
-  showToast(state.radioRunning ? 'Mesh radio active' : 'Mesh radio stopped');
-}
-
 function toggleGps(enable) {
   state.gpsEnabled = enable !== undefined ? enable : !state.gpsEnabled;
   document.getElementById('gpsWarningCard').style.display = state.gpsEnabled ? 'none' : 'flex';
-}
-
-function renderRadioStatus() {
-  const subtext = document.getElementById('radioSubtext');
-  const toggleBtn = document.getElementById('radioToggleBtn');
-  const nodeNick = document.getElementById('nodeNickname');
-
-  if (nodeNick) nodeNick.textContent = state.nickname;
-
-  if (state.radioRunning) {
-    subtext.textContent = `Mesh radio active · ${state.peers.length} reachable peers`;
-    toggleBtn.textContent = 'Stop Radio';
-    toggleBtn.style.backgroundColor = 'var(--terracotta)';
-    toggleBtn.style.color = '#ffffff';
-  } else {
-    subtext.textContent = 'Radio idle';
-    toggleBtn.textContent = 'Start Radio';
-    toggleBtn.style.backgroundColor = 'var(--text-color)';
-    toggleBtn.style.color = 'var(--bg-color)';
-  }
-
-  const peersBtn = document.getElementById('openPeersBtn');
-  if (peersBtn) peersBtn.textContent = `${state.peers.length} Peer${state.peers.length === 1 ? '' : 's'}`;
 }
 
 // Modal (Citizen only)
@@ -317,7 +288,9 @@ function closePeersModal() {
 
 // Render
 function renderAll() {
-  renderRadioStatus();
+  const peersBtn = document.getElementById('openPeersBtn');
+  if (peersBtn) peersBtn.textContent = `${state.peers.length} Peer${state.peers.length === 1 ? '' : 's'}`;
+
   if (state.role === 'victim') {
     renderMyMessages();
   } else {

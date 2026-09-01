@@ -90,22 +90,11 @@
 
         <!-- Main Scrollable Content -->
         <main class="app-content">
-          <!-- Radio Status Bar -->
-          <section class="tactical-status-bar">
-            <div class="radio-status-card">
-              <div>
-                <div class="node-nickname" id="nodeNickname">C|dev-K7P2</div>
-                <div class="radio-subtext" id="radioSubtext">Mesh radio active · 2 reachable peers</div>
-              </div>
-              <button class="radio-toggle-btn" id="radioToggleBtn" onclick="toggleRadio()">Stop</button>
-            </div>
-
-            <!-- GPS Warning Banner -->
-            <div class="gps-warning-card" id="gpsWarningCard" style="display: none;">
-              <span>Location services off. Nearby requires GPS.</span>
-              <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--terracotta); font-weight:bold; cursor:pointer;">Fix</button>
-            </div>
-          </section>
+          <!-- GPS Warning Banner (Only if GPS off) -->
+          <div class="gps-warning-card" id="gpsWarningCard" style="display: none; margin: 12px 18px 0;">
+            <span>Location services off. Nearby requires GPS.</span>
+            <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--terracotta); font-weight:bold; cursor:pointer;">Fix</button>
+          </div>
 
           <!-- VIEW 1: CITIZEN / VICTIM VIEW -->
           <div id="victimView" class="view-container">
@@ -185,7 +174,7 @@
       <div class="panel-header">
         <h2>MeshSync Simulator</h2>
       </div>
-      <p class="panel-desc">Cognitive minimalism & deliberate typography:</p>
+      <p class="panel-desc">Cognitive minimalism & seamless background radio:</p>
 
       <div class="sim-section">
         <h3>1. Switch Role Profiles</h3>
@@ -208,7 +197,7 @@
       </div>
 
       <div class="panel-footer">
-        <div>v.0.8 Push by - Aryan Time - 21.36 IST</div>
+        <div>v.0.9 Push by - Aryan Time - 21.40 IST</div>
       </div>
     </aside>
   </div>
