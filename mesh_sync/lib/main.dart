@@ -13,10 +13,11 @@ import 'ui/theme/mesh_theme.dart';
 import 'ui/victim_screen.dart';
 import 'ui/widgets/peers_sheet.dart';
 
+// Global theme mode notifier for Dark / Light mode switching
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Identity and the persisted seq counter must be loaded before anything can
-  // create a message, so this happens up front rather than in initState.
   final app = await MeshApp.create();
   runApp(MeshSyncApp(app: app));
 }
@@ -28,11 +29,18 @@ class MeshSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MeshSync',
-      debugShowCheckedModeBanner: false,
-      theme: MeshTheme.darkTheme,
-      home: MeshHomePage(app: app),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, _) {
+        return MaterialApp(
+          title: 'MeshSync',
+          debugShowCheckedModeBanner: false,
+          theme: MeshTheme.lightTheme,
+          darkTheme: MeshTheme.darkTheme,
+          themeMode: currentMode,
+          home: MeshHomePage(app: app),
+        );
+      },
     );
   }
 }
@@ -59,7 +67,6 @@ class _MeshHomePageState extends State<MeshHomePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => PeersSheet(app: _app),
     );
   }
@@ -67,6 +74,7 @@ class _MeshHomePageState extends State<MeshHomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final service = _app.service;
 
     return DefaultTabController(
@@ -76,30 +84,31 @@ class _MeshHomePageState extends State<MeshHomePage> {
           title: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                width: 10,
+                height: 10,
+                margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
-                  color: MeshTheme.meshCyan.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: BoxShape.circle,
+                  color: service.isRunning ? MeshTheme.safeGreen : MeshTheme.darkTextDim,
                 ),
-                child: const Icon(Icons.emergency_rounded, color: MeshTheme.meshCyan, size: 22),
               ),
-              const SizedBox(width: 10),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'MESHSYNC',
                     style: TextStyle(
+                      fontFamily: 'Arial',
                       fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   Text(
-                    'P2P Offline Emergency Relay',
+                    'Offline Emergency Relay',
                     style: TextStyle(
+                      fontFamily: 'Arial',
                       fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.normal,
                     ),
                   ),
@@ -108,28 +117,31 @@ class _MeshHomePageState extends State<MeshHomePage> {
             ],
           ),
           actions: [
-            // Quick Peers Counter in AppBar
+            // Dark / Light Mode Toggle Button
+            IconButton(
+              icon: Icon(
+                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                size: 20,
+              ),
+              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+              onPressed: () {
+                themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+              },
+            ),
+            // Peers Button
             ListenableBuilder(
               listenable: service,
               builder: (context, _) {
                 final peers = service.peers.length;
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: ActionChip(
-                    avatar: Icon(
-                      Icons.hub_rounded,
-                      size: 16,
-                      color: peers > 0 ? MeshTheme.meshCyan : MeshTheme.darkTextDim,
-                    ),
-                    label: Text(
-                      '$peers Peer${peers == 1 ? '' : 's'}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: peers > 0 ? MeshTheme.meshCyan : MeshTheme.darkTextDim,
-                      ),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      visualDensity: VisualDensity.compact,
                     ),
                     onPressed: _showPeersSheet,
+                    child: Text('$peers Peer${peers == 1 ? '' : 's'}'),
                   ),
                 );
               },
@@ -137,14 +149,8 @@ class _MeshHomePageState extends State<MeshHomePage> {
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(
-                icon: Icon(Icons.sensors_rounded, size: 20),
-                text: 'Emergency Mesh',
-              ),
-              Tab(
-                icon: Icon(Icons.terminal_rounded, size: 20),
-                text: 'Tactical Log',
-              ),
+              Tab(text: 'Emergency Mesh'),
+              Tab(text: 'Tactical Log'),
             ],
           ),
         ),
@@ -154,7 +160,7 @@ class _MeshHomePageState extends State<MeshHomePage> {
             children: [
               Column(
                 children: [
-                  _TacticalStatusBar(app: _app, onShowPeers: _showPeersSheet),
+                  _MinimalistStatusBar(app: _app),
                   const Divider(height: 1),
                   Expanded(
                     child: _app.role == MeshRole.responder
@@ -172,36 +178,36 @@ class _MeshHomePageState extends State<MeshHomePage> {
   }
 }
 
-class _TacticalStatusBar extends StatelessWidget {
-  const _TacticalStatusBar({required this.app, required this.onShowPeers});
+class _MinimalistStatusBar extends StatelessWidget {
+  const _MinimalistStatusBar({required this.app});
 
   final MeshApp app;
-  final VoidCallback onShowPeers;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final service = app.service;
     final peers = service.peers.length;
     final isRunning = service.isRunning;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      color: MeshTheme.darkSurface,
+      color: theme.scaffoldBackgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Role Selection Bar
+          // Minimalist Role Switcher
           SegmentedButton<MeshRole>(
             segments: const [
               ButtonSegment(
                 value: MeshRole.victim,
                 label: Text('Victim / Citizen'),
-                icon: Icon(Icons.person_pin_rounded, size: 18),
+                icon: Icon(Icons.person, size: 16),
               ),
               ButtonSegment(
                 value: MeshRole.responder,
                 label: Text('Search & Rescue'),
-                icon: Icon(Icons.medical_services_rounded, size: 18),
+                icon: Icon(Icons.medical_services, size: 16),
               ),
             ],
             selected: {app.role},
@@ -209,189 +215,109 @@ class _TacticalStatusBar extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Radio Status & Controls Container
+          // Radio Status & Controls Card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: MeshTheme.darkCard,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: MeshTheme.darkCardBorder),
+              color: theme.cardTheme.color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    _GlowStatusDot(active: isRunning),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                service.nickname,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  fontFamily: 'monospace',
-                                  color: MeshTheme.meshCyan,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: isRunning
-                                      ? MeshTheme.ackGreen.withValues(alpha: 0.15)
-                                      : MeshTheme.darkCardBorder,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  isRunning ? 'ONLINE' : 'STANDBY',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: isRunning ? MeshTheme.ackGreen : MeshTheme.darkTextDim,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isRunning
-                                ? 'Advertising & Discovering · $peers in direct range'
-                                : 'Mesh radio stopped',
-                            style: const TextStyle(fontSize: 11, color: MeshTheme.darkTextDim),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Start / Stop Radio Button
-                    FilledButton(
-                      onPressed: isRunning ? service.stop : service.start,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: isRunning ? MeshTheme.catMedical : MeshTheme.meshTeal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isRunning ? 'Stop Radio' : 'Start Mesh',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (service.pendingCount > 0) ...[
-                  const SizedBox(height: 8),
-                  Row(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(
-                        width: 10,
-                        height: 10,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: MeshTheme.meshCyan),
+                      Row(
+                        children: [
+                          Text(
+                            service.nickname,
+                            style: const TextStyle(
+                              fontFamily: 'Arial',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isRunning ? MeshTheme.safeGreen : theme.dividerColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isRunning ? 'ONLINE' : 'OFFLINE',
+                              style: const TextStyle(
+                                fontFamily: 'Arial',
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 2),
                       Text(
-                        'Handshaking with ${service.pendingCount} candidate peer...',
-                        style: const TextStyle(fontSize: 11, color: MeshTheme.meshCyan),
+                        isRunning
+                            ? 'Advertising & Discovering · $peers in range'
+                            : 'Radio idle',
+                        style: TextStyle(
+                          fontFamily: 'Arial',
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
                       ),
                     ],
                   ),
-                ],
+                ),
+                FilledButton(
+                  onPressed: isRunning ? service.stop : service.start,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isRunning ? MeshTheme.emergencyRed : theme.colorScheme.primary,
+                    foregroundColor: isRunning ? Colors.white : theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: Text(
+                    isRunning ? 'Stop' : 'Start',
+                    style: const TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
               ],
             ),
           ),
 
-          // GPS / Location Warning Alert
           if (!service.gpsEnabled) ...[
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF451A03),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: MeshTheme.catTrapped.withValues(alpha: 0.5)),
+                color: theme.cardTheme.color,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: MeshTheme.emergencyRed),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_off_rounded, color: MeshTheme.catTrapped, size: 22),
-                  const SizedBox(width: 10),
+                  const Icon(Icons.location_off, color: MeshTheme.emergencyRed, size: 18),
+                  const SizedBox(width: 8),
                   const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Location / GPS is Turned Off',
-                          style: TextStyle(
-                            color: Color(0xFFFEF3C7),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Nearby Connections requires GPS to form offline radio links.',
-                          style: TextStyle(color: Color(0xFFFDE68A), fontSize: 11),
-                        ),
-                      ],
+                    child: Text(
+                      'GPS is off. Nearby requires location to connect.',
+                      style: TextStyle(fontFamily: 'Arial', fontSize: 11),
                     ),
                   ),
-                  OutlinedButton(
+                  TextButton(
                     onPressed: service.requestPermissions,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: MeshTheme.catTrapped,
-                      side: const BorderSide(color: MeshTheme.catTrapped),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Fix GPS', style: TextStyle(fontSize: 11)),
+                    child: const Text('Fix', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, color: MeshTheme.emergencyRed)),
                   ),
                 ],
               ),
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _GlowStatusDot extends StatelessWidget {
-  const _GlowStatusDot({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: active ? MeshTheme.ackGreen : MeshTheme.darkMuted,
-        boxShadow: active
-            ? [
-                const BoxShadow(
-                  color: MeshTheme.ackGreenGlow,
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
       ),
     );
   }

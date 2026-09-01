@@ -14,9 +14,7 @@ class VictimScreen extends StatefulWidget {
   State<VictimScreen> createState() => _VictimScreenState();
 }
 
-class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
+class _VictimScreenState extends State<VictimScreen> {
   Timer? _tickerTimer;
 
   MeshApp get app => widget.app;
@@ -24,16 +22,6 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    // Refresh elapsed time every 10 seconds
     _tickerTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) setState(() {});
     });
@@ -42,7 +30,6 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _tickerTimer?.cancel();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -50,7 +37,6 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
     final request = await showModalBottomSheet<_SosRequest>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _SosSheet(initialCategory: initialCategory ?? Category.medical),
     );
     if (request == null) return;
@@ -64,20 +50,11 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: MeshTheme.catMedical,
+          backgroundColor: MeshTheme.emergencyRed,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          content: Row(
-            children: [
-              const Icon(Icons.emergency_share_rounded, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'SOS Broadcasted! ID: ${message.id.substring(0, 8)}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
+          content: Text(
+            'SOS broadcasted (ID: ${message.id.substring(0, 8)})',
+            style: const TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
       );
@@ -88,138 +65,89 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final mine = app.myMessages;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.all(16),
       children: [
-        // --- HERO SOS TRIGGER CARD ---
+        // --- MINIMALIST HERO SOS SECTION ---
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E1014),
-                MeshTheme.darkCard,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: MeshTheme.catMedical.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: MeshTheme.catMedical.withValues(alpha: 0.15),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.dividerColor),
           ),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: MeshTheme.catMedical.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: MeshTheme.catMedical.withValues(alpha: 0.4)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.wifi_tethering_rounded, size: 14, color: MeshTheme.catMedical),
-                        SizedBox(width: 6),
-                        Text(
-                          'OFFLINE EMERGENCY BEACON',
-                          style: TextStyle(
-                            color: MeshTheme.catMedical,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
+              // Bold Pure Red SOS Button
+              SizedBox(
+                width: 140,
+                height: 140,
+                child: ElevatedButton(
+                  onPressed: () => _compose(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MeshTheme.emergencyRed,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: const CircleBorder(),
+                    padding: EdgeInsets.zero,
                   ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // Pulsating Emergency SOS Button
-              ScaleTransition(
-                scale: _pulseAnimation,
-                child: SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: ElevatedButton(
-                    onPressed: () => _compose(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MeshTheme.catMedical,
-                      foregroundColor: Colors.white,
-                      elevation: 12,
-                      shadowColor: MeshTheme.catMedical.withValues(alpha: 0.6),
-                      shape: const CircleBorder(),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.sos_rounded, size: 48, color: Colors.white),
-                        SizedBox(height: 2),
-                        Text(
-                          'SEND SOS',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.sos, size: 48, color: Colors.white),
+                      SizedBox(height: 2),
+                      Text(
+                        'SEND SOS',
+                        style: TextStyle(
+                          fontFamily: 'Arial',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'Tap to alert nearby search & rescue teams and mesh nodes',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: MeshTheme.darkTextDim,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 16),
-              // Quick Emergency Category Presets
+              Text(
+                'Tap to broadcast emergency signal over offline mesh',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Arial',
+                  color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Category Quick Presets
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _QuickCategoryBtn(
+                  _CategoryQuickBtn(
                     category: Category.medical,
                     label: 'Medical',
-                    icon: Icons.medical_services_rounded,
+                    icon: Icons.medical_services,
                     onTap: () => _compose(context, initialCategory: Category.medical),
                   ),
-                  _QuickCategoryBtn(
+                  _CategoryQuickBtn(
                     category: Category.trapped,
                     label: 'Trapped',
-                    icon: Icons.person_pin_circle_rounded,
+                    icon: Icons.person_pin_circle,
                     onTap: () => _compose(context, initialCategory: Category.trapped),
                   ),
-                  _QuickCategoryBtn(
+                  _CategoryQuickBtn(
                     category: Category.fire,
                     label: 'Fire',
-                    icon: Icons.local_fire_department_rounded,
+                    icon: Icons.local_fire_department,
                     onTap: () => _compose(context, initialCategory: Category.fire),
                   ),
-                  _QuickCategoryBtn(
+                  _CategoryQuickBtn(
                     category: Category.supplies,
                     label: 'Supplies',
-                    icon: Icons.inventory_2_rounded,
+                    icon: Icons.inventory_2,
                     onTap: () => _compose(context, initialCategory: Category.supplies),
                   ),
                 ],
@@ -228,105 +156,56 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // --- SENT INCIDENTS LIST / EMPTY GUIDE ---
+        // --- ACTIVE DISTRESS SIGNALS ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Your Active Distress Signals',
-              style: theme.textTheme.titleMedium?.copyWith(
+            const Text(
+              'Active Signals',
+              style: TextStyle(
+                fontFamily: 'Arial',
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: MeshTheme.darkText,
               ),
             ),
             if (mine.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: MeshTheme.catMedical.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${mine.length} Active',
-                  style: const TextStyle(
-                    color: MeshTheme.catMedical,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                '${mine.length} active',
+                style: const TextStyle(
+                  fontFamily: 'Arial',
+                  fontSize: 12,
+                  color: MeshTheme.emergencyRed,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
-        if (mine.isEmpty) ...[
+        if (mine.isEmpty)
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: MeshTheme.darkSurface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: MeshTheme.darkCardBorder),
+              color: theme.cardTheme.color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.dividerColor),
             ),
-            child: Column(
-              children: [
-                Icon(Icons.shield_outlined, size: 40, color: MeshTheme.meshTealGlow),
-                const SizedBox(height: 12),
-                const Text(
-                  'No Distress Signals Sent',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            child: Center(
+              child: Text(
+                'No active distress signals. Your device will automatically relay messages for other users.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Arial',
+                  color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
+                  fontSize: 12,
+                  height: 1.4,
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'When you trigger an SOS, it automatically propagates across peer-to-peer devices even without cell service or Internet.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: MeshTheme.darkTextDim, fontSize: 13, height: 1.4),
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          // Mesh Survival Tip Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: MeshTheme.darkCard,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: MeshTheme.darkCardBorder),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: MeshTheme.meshCyan.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.share_location_rounded, color: MeshTheme.meshCyan, size: 20),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Passive Relay Active',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Even while idle, your device carries and relays encrypted SOS packets for others in your vicinity.',
-                        style: TextStyle(color: MeshTheme.darkTextDim, fontSize: 12, height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
+          )
+        else
           for (final message in mine) ...[
             _SentSosCard(
               message: message,
@@ -334,9 +213,8 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
               acked: app.isAcked(message.id),
               onSafe: () => _confirmSafe(context, message.id),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
-        ],
       ],
     );
   }
@@ -345,20 +223,20 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.health_and_safety_rounded, color: MeshTheme.catSafe, size: 36),
-        title: const Text('Mark Yourself as Safe?'),
+        title: const Text('Mark as Safe?', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold)),
         content: const Text(
-          'This will flood a CANCEL message to all connected mesh nodes and responders, clearing your emergency status.',
+          'This will cancel the active SOS and notify responders that you are safe.',
+          style: TextStyle(fontFamily: 'Arial'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep Emergency Active'),
+            child: const Text('Cancel', style: TextStyle(fontFamily: 'Arial')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: MeshTheme.catSafe),
-            child: const Text('I am Safe (Resolve)'),
+            style: FilledButton.styleFrom(backgroundColor: MeshTheme.safeGreen),
+            child: const Text('I Am Safe', style: TextStyle(fontFamily: 'Arial')),
           ),
         ],
       ),
@@ -369,7 +247,7 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Incident cancelled and marked self-resolved.'),
+            content: Text('Distress signal marked as safe.', style: TextStyle(fontFamily: 'Arial')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -378,8 +256,8 @@ class _VictimScreenState extends State<VictimScreen> with SingleTickerProviderSt
   }
 }
 
-class _QuickCategoryBtn extends StatelessWidget {
-  const _QuickCategoryBtn({
+class _CategoryQuickBtn extends StatelessWidget {
+  const _CategoryQuickBtn({
     required this.category,
     required this.label,
     required this.icon,
@@ -393,32 +271,21 @@ class _QuickCategoryBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = MeshTheme.getCategoryColor(category);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
+    final theme = Theme.of(context);
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+        side: BorderSide(color: theme.dividerColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontFamily: 'Arial', fontSize: 10, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
@@ -439,179 +306,88 @@ class _SentSosCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final core = message.core;
-    final catColor = MeshTheme.getCategoryColor(core.cat);
-    final catIcon = MeshTheme.getCategoryIcon(core.cat);
-
-    final String statusText;
-    final Color statusColor;
-    final IconData statusIcon;
-
-    if (acked) {
-      statusText = 'RESPONDER ACKNOWLEDGED — Help is incoming!';
-      statusColor = MeshTheme.ackGreen;
-      statusIcon = Icons.verified_rounded;
-    } else if (peerCount == 0) {
-      statusText = 'Broadcasting offline · Searching for nearby peers';
-      statusColor = MeshTheme.catTrapped;
-      statusIcon = Icons.wifi_find_rounded;
-    } else {
-      statusText = 'Relayed across $peerCount nearby device${peerCount == 1 ? '' : 's'}';
-      statusColor = MeshTheme.meshCyan;
-      statusIcon = Icons.wifi_tethering_rounded;
-    }
 
     return Container(
       decoration: BoxDecoration(
-        color: MeshTheme.darkCard,
-        borderRadius: BorderRadius.circular(18),
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: acked
-              ? MeshTheme.ackGreen.withValues(alpha: 0.6)
-              : MeshTheme.darkCardBorder,
+          color: acked ? MeshTheme.safeGreen : theme.dividerColor,
           width: acked ? 1.5 : 1.0,
         ),
-        boxShadow: acked
-            ? [
-                BoxShadow(
-                  color: MeshTheme.ackGreen.withValues(alpha: 0.15),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.12),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-              border: Border(
-                bottom: BorderSide(color: statusColor.withValues(alpha: 0.2)),
-              ),
+              color: acked ? MeshTheme.safeGreen.withValues(alpha: 0.1) : theme.scaffoldBackgroundColor,
+              border: Border(bottom: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
-                Icon(statusIcon, color: statusColor, size: 18),
-                const SizedBox(width: 8),
+                Icon(
+                  acked ? Icons.check_circle : Icons.radio_button_checked,
+                  size: 14,
+                  color: acked ? MeshTheme.safeGreen : MeshTheme.emergencyRed,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    statusText,
+                    acked ? 'Responder Acknowledged' : 'Relayed across $peerCount peers',
                     style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
+                      fontFamily: 'Arial',
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
+                      color: acked ? MeshTheme.safeGreen : theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
                 Text(
                   _elapsed(core.ts),
-                  style: const TextStyle(
-                    color: MeshTheme.darkTextDim,
-                    fontSize: 11,
-                  ),
+                  style: const TextStyle(fontFamily: 'Arial', fontSize: 10),
                 ),
               ],
             ),
           ),
-
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: catColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(catIcon, color: catColor, size: 24),
+                    Text(
+                      MeshTheme.getCategoryLabel(core.cat),
+                      style: const TextStyle(fontFamily: 'Arial', fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            MeshTheme.getCategoryLabel(core.cat),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: MeshTheme.darkText,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: MeshTheme.darkSurface,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '${core.n ?? 1} ${(core.n ?? 1) == 1 ? "Person" : "People"}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: MeshTheme.darkTextDim,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'ID: ${core.id.substring(0, 8)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: MeshTheme.darkMuted,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    Text(
+                      '${core.n ?? 1} ${(core.n ?? 1) == 1 ? "Person" : "People"}',
+                      style: const TextStyle(fontFamily: 'Arial', fontSize: 11),
                     ),
                   ],
                 ),
-
                 if (core.txt != null && core.txt!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: MeshTheme.darkSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: MeshTheme.darkCardBorder),
-                    ),
-                    child: Text(
-                      core.txt!,
-                      style: const TextStyle(fontSize: 13, color: MeshTheme.darkText),
-                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    core.txt!,
+                    style: const TextStyle(fontFamily: 'Arial', fontSize: 12),
                   ),
                 ],
-
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: onSafe,
-                    icon: const Icon(Icons.health_and_safety_outlined, size: 18, color: MeshTheme.catSafe),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: MeshTheme.catSafe.withValues(alpha: 0.5)),
-                      foregroundColor: MeshTheme.catSafe,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      foregroundColor: MeshTheme.safeGreen,
+                      side: const BorderSide(color: MeshTheme.safeGreen),
                     ),
-                    label: const Text('I Am Safe (Cancel Distress)'),
+                    child: const Text('I Am Safe', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -625,7 +401,6 @@ class _SentSosCard extends StatelessWidget {
 
 String _elapsed(int unixSeconds) {
   final seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000 - unixSeconds;
-  if (seconds < 10) return 'Just now';
   if (seconds < 60) return '${seconds}s ago';
   if (seconds < 3600) return '${seconds ~/ 60}m ago';
   return '${seconds ~/ 3600}h ago';
@@ -667,222 +442,85 @@ class _SosSheetState extends State<_SosSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
-      decoration: const BoxDecoration(
-        color: MeshTheme.darkCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: MeshTheme.darkCardBorder)),
-      ),
       padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: MeshTheme.darkCardBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: MeshTheme.catMedical.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.sos_rounded, color: MeshTheme.catMedical, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Broadcast Emergency SOS',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const Text(
-                      'Select category and details to broadcast over mesh',
-                      style: TextStyle(color: MeshTheme.darkTextDim, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
           const Text(
-            'Emergency Category',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: MeshTheme.darkTextDim),
+            'Broadcast Emergency SOS',
+            style: TextStyle(fontFamily: 'Arial', fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               for (final c in Category.values)
-                _CategoryChip(
-                  category: c,
+                ChoiceChip(
+                  label: Text(c.wire, style: const TextStyle(fontFamily: 'Arial', fontSize: 11)),
                   selected: _cat == c,
-                  onSelected: () => setState(() => _cat = c),
+                  onSelected: (_) => setState(() => _cat = c),
                 ),
             ],
           ),
-
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: MeshTheme.darkSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: MeshTheme.darkCardBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.people_alt_rounded, color: MeshTheme.meshCyan, size: 20),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'People in Danger',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      Text(
-                        'Headcount needing assistance',
-                        style: TextStyle(color: MeshTheme.darkTextDim, fontSize: 11),
-                      ),
-                    ],
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('People Needing Help', style: TextStyle(fontFamily: 'Arial', fontSize: 13)),
+              Row(
+                children: [
+                  IconButton.outlined(
+                    onPressed: _headcount > 1 ? () => setState(() => _headcount--) : null,
+                    icon: const Icon(Icons.remove, size: 16),
                   ),
-                ),
-                IconButton.filledTonal(
-                  onPressed: _headcount > 1 ? () => setState(() => _headcount--) : null,
-                  icon: const Icon(Icons.remove_rounded),
-                  style: IconButton.styleFrom(
-                    backgroundColor: MeshTheme.darkCard,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('$_headcount', style: const TextStyle(fontFamily: 'Arial', fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Text(
-                    '$_headcount',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: MeshTheme.meshCyan),
+                  IconButton.outlined(
+                    onPressed: () => setState(() => _headcount++),
+                    icon: const Icon(Icons.add, size: 16),
                   ),
-                ),
-                IconButton.filledTonal(
-                  onPressed: () => setState(() => _headcount++),
-                  icon: const Icon(Icons.add_rounded),
-                  style: IconButton.styleFrom(
-                    backgroundColor: MeshTheme.darkCard,
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           TextField(
             controller: _text,
             maxLength: kMaxTextLength,
             maxLines: 2,
-            style: const TextStyle(fontSize: 14),
+            style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
             decoration: const InputDecoration(
-              labelText: 'Specific Details / Landmarks (optional)',
-              hintText: 'e.g. 2nd floor, stairwell blocked, need water',
+              labelText: 'Details / Location info (optional)',
               alignLabelWithHint: true,
             ),
           ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            height: 52,
-            child: FilledButton.icon(
+            height: 48,
+            child: FilledButton(
               onPressed: () => Navigator.pop(
                 context,
                 _SosRequest(_cat, _headcount, _text.text.trim()),
               ),
-              icon: const Icon(Icons.emergency_share_rounded, size: 22),
               style: FilledButton.styleFrom(
-                backgroundColor: MeshTheme.catMedical,
+                backgroundColor: MeshTheme.emergencyRed,
                 foregroundColor: Colors.white,
               ),
-              label: const Text(
-                'BROADCAST DISTRESS SIGNAL',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              ),
+              child: const Text('BROADCAST SOS', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 14)),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.category,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final Category category;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = MeshTheme.getCategoryColor(category);
-    final icon = MeshTheme.getCategoryIcon(category);
-
-    return InkWell(
-      onTap: onSelected,
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.25) : MeshTheme.darkSurface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? color : MeshTheme.darkCardBorder,
-            width: selected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: selected ? color : MeshTheme.darkTextDim),
-            const SizedBox(width: 6),
-            Text(
-              category.wire,
-              style: TextStyle(
-                color: selected ? color : MeshTheme.darkText,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

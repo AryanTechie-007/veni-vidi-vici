@@ -4,54 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MeshSync — Offline Emergency SOS Relay</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app-layout">
-    <!-- Mobile Device Frame Container -->
+    <!-- Phone Frame -->
     <div class="phone-frame">
-      <!-- Phone Top Notch / Status Bar -->
-      <div class="phone-notch">
-        <span class="notch-time" id="deviceClock">20:50</span>
-        <div class="notch-camera"></div>
-        <div class="notch-icons">
-          <span class="material-symbols-rounded">signal_cellular_alt</span>
-          <span class="material-symbols-rounded">wifi</span>
-          <span class="material-symbols-rounded">battery_charging_full</span>
-        </div>
-      </div>
-
       <!-- App Header -->
       <header class="app-header">
         <div class="brand-group">
-          <div class="brand-icon">
-            <span class="material-symbols-rounded">emergency</span>
-          </div>
+          <div class="status-dot-tiny" id="radioDot"></div>
           <div>
             <div class="brand-title">MESHSYNC</div>
-            <div class="brand-subtitle">P2P Offline Emergency Relay</div>
+            <div class="brand-subtitle">Offline Emergency Relay</div>
           </div>
         </div>
-        <button class="peers-chip" id="openPeersBtn">
-          <span class="material-symbols-rounded">hub</span>
-          <span id="peersCountLabel">2 Peers</span>
-        </button>
+        <div class="header-actions">
+          <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">Light</button>
+          <button class="peers-chip" id="openPeersBtn">2 Peers</button>
+        </div>
       </header>
 
       <!-- App Tab Navigation -->
       <nav class="tab-nav">
-        <button class="tab-btn active" id="tabMeshBtn" onclick="switchTab('mesh')">
-          <span class="material-symbols-rounded">sensors</span>
-          <span>Emergency Mesh</span>
-        </button>
-        <button class="tab-btn" id="tabLogBtn" onclick="switchTab('log')">
-          <span class="material-symbols-rounded">terminal</span>
-          <span>Tactical Log</span>
-        </button>
+        <button class="tab-btn active" id="tabMeshBtn" onclick="switchTab('mesh')">Emergency Mesh</button>
+        <button class="tab-btn" id="tabLogBtn" onclick="switchTab('log')">Tactical Log</button>
       </nav>
 
       <!-- Main Scrollable Screen Content -->
@@ -60,47 +37,26 @@
         <section class="tactical-status-bar">
           <!-- Role Switcher -->
           <div class="role-segmented-control">
-            <button class="role-segment active" id="roleVictimBtn" onclick="setRole('victim')">
-              <span class="material-symbols-rounded">person_pin</span>
-              <span>Victim / Citizen</span>
-            </button>
-            <button class="role-segment" id="roleResponderBtn" onclick="setRole('responder')">
-              <span class="material-symbols-rounded">medical_services</span>
-              <span>Search & Rescue</span>
-            </button>
+            <button class="role-segment active" id="roleVictimBtn" onclick="setRole('victim')">Victim / Citizen</button>
+            <button class="role-segment" id="roleResponderBtn" onclick="setRole('responder')">Search & Rescue</button>
           </div>
 
           <!-- Radio Status Card -->
           <div class="radio-status-card">
-            <div class="radio-row">
-              <div class="status-glow-dot active" id="radioGlowDot"></div>
-              <div class="radio-info">
-                <div class="radio-name-row">
-                  <span class="node-nickname" id="nodeNickname">C|dev-K7P2</span>
-                  <span class="status-badge active" id="radioStateBadge">ONLINE</span>
-                </div>
-                <div class="radio-subtext" id="radioSubtext">Advertising & Discovering · 2 in direct range</div>
+            <div>
+              <div>
+                <span class="node-nickname" id="nodeNickname">C|dev-K7P2</span>
+                <span class="status-badge" id="radioStateBadge">ONLINE</span>
               </div>
-              <button class="radio-toggle-btn active" id="radioToggleBtn" onclick="toggleRadio()">
-                <span class="material-symbols-rounded" id="radioToggleIcon">stop</span>
-                <span id="radioToggleLabel">Stop Radio</span>
-              </button>
+              <div class="radio-subtext" id="radioSubtext">Advertising & Discovering · 2 in range</div>
             </div>
-            <!-- Handshake status -->
-            <div class="handshake-row" id="handshakeRow" style="display: none;">
-              <div class="spinner-tiny"></div>
-              <span>Handshaking with 1 candidate peer...</span>
-            </div>
+            <button class="radio-toggle-btn" id="radioToggleBtn" onclick="toggleRadio()">Stop</button>
           </div>
 
           <!-- GPS Warning Banner -->
           <div class="gps-warning-card" id="gpsWarningCard" style="display: none;">
-            <span class="material-symbols-rounded">location_off</span>
-            <div class="gps-warning-text">
-              <strong>Location / GPS is Turned Off</strong>
-              <span>Nearby Connections requires GPS to form offline radio links.</span>
-            </div>
-            <button class="gps-fix-btn" onclick="toggleGps(true)">Fix GPS</button>
+            <span>GPS is off. Nearby requires location.</span>
+            <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--sos-red); font-weight:bold; cursor:pointer;">Fix</button>
           </div>
         </section>
 
@@ -108,62 +64,34 @@
         <div id="victimView" class="view-container">
           <!-- Hero SOS Card -->
           <section class="hero-sos-card">
-            <div class="beacon-pill">
-              <span class="material-symbols-rounded">wifi_tethering</span>
-              <span>OFFLINE EMERGENCY BEACON</span>
-            </div>
-
-            <!-- Pulsing SOS Button -->
-            <div class="pulse-wrapper">
-              <div class="pulse-ring ring-1"></div>
-              <div class="pulse-ring ring-2"></div>
-              <button class="hero-sos-button" onclick="openSosModal()">
-                <span class="material-symbols-rounded">sos</span>
-                <span class="sos-label">SEND SOS</span>
-              </button>
-            </div>
-
-            <p class="hero-caption">Tap to alert nearby search & rescue teams and mesh nodes</p>
+            <button class="hero-sos-button" onclick="openSosModal()">
+              <span class="sos-icon">SOS</span>
+              <span class="sos-label">SEND SOS</span>
+            </button>
+            <p class="hero-caption">Tap to broadcast emergency signal over offline mesh</p>
 
             <!-- Quick Category Presets -->
             <div class="quick-category-grid">
-              <button class="quick-cat-btn medical" onclick="openSosModal('medical')">
-                <span class="material-symbols-rounded">medical_services</span>
-                <span>Medical</span>
-              </button>
-              <button class="quick-cat-btn trapped" onclick="openSosModal('trapped')">
-                <span class="material-symbols-rounded">person_pin_circle</span>
-                <span>Trapped</span>
-              </button>
-              <button class="quick-cat-btn fire" onclick="openSosModal('fire')">
-                <span class="material-symbols-rounded">local_fire_department</span>
-                <span>Fire</span>
-              </button>
-              <button class="quick-cat-btn supplies" onclick="openSosModal('supplies')">
-                <span class="material-symbols-rounded">inventory_2</span>
-                <span>Supplies</span>
-              </button>
+              <button class="quick-cat-btn" onclick="openSosModal('medical')">Medical</button>
+              <button class="quick-cat-btn" onclick="openSosModal('trapped')">Trapped</button>
+              <button class="quick-cat-btn" onclick="openSosModal('fire')">Fire</button>
+              <button class="quick-cat-btn" onclick="openSosModal('supplies')">Supplies</button>
             </div>
           </section>
 
           <!-- Active Distress Signals Section -->
           <section class="distress-signals-section">
             <div class="section-header">
-              <h3>Your Active Distress Signals</h3>
-              <span class="active-count-badge" id="myActiveCount">1 Active</span>
+              <h3>Active Signals</h3>
+              <span class="active-count-badge" id="myActiveCount">1 active</span>
             </div>
             <div id="myMessagesList" class="incident-cards-list"></div>
           </section>
 
           <!-- Passive Relay Guide Card -->
           <div class="passive-relay-card">
-            <div class="relay-icon">
-              <span class="material-symbols-rounded">share_location</span>
-            </div>
-            <div>
-              <div class="relay-title">Passive Relay Active</div>
-              <div class="relay-desc">Even while idle, your device carries and relays encrypted SOS packets for others in your vicinity.</div>
-            </div>
+            <div class="relay-title">Passive Relay Active</div>
+            <div class="relay-desc">Your device automatically relays encrypted emergency packets for nearby survivors.</div>
           </div>
         </div>
 
@@ -171,20 +99,16 @@
         <div id="responderView" class="view-container" style="display: none;">
           <!-- Triage Metrics Bar -->
           <section class="triage-metrics-card">
-            <div class="triage-title-row">
-              <span class="material-symbols-rounded">emergency</span>
-              <span>TACTICAL TRIAGE DASHBOARD</span>
-            </div>
             <div class="metrics-grid">
-              <div class="metric-box red">
+              <div class="metric-box">
                 <div class="metric-val" id="metricActiveSos">2</div>
                 <div class="metric-lbl">ACTIVE SOS</div>
               </div>
-              <div class="metric-box amber">
+              <div class="metric-box">
                 <div class="metric-val" id="metricPeopleAtRisk">5</div>
                 <div class="metric-lbl">PEOPLE AT RISK</div>
               </div>
-              <div class="metric-box green">
+              <div class="metric-box">
                 <div class="metric-val" id="metricAckConfirmed">1</div>
                 <div class="metric-lbl">ACK CONFIRMED</div>
               </div>
@@ -194,10 +118,10 @@
           <!-- Category Filter Bar -->
           <div class="filter-chips-bar" id="responderFilterBar">
             <button class="filter-pill active" onclick="setResponderFilter('ALL')">All (2)</button>
-            <button class="filter-pill medical" onclick="setResponderFilter('MEDICAL')">MEDICAL (1)</button>
-            <button class="filter-pill trapped" onclick="setResponderFilter('TRAPPED')">TRAPPED (1)</button>
-            <button class="filter-pill fire" onclick="setResponderFilter('FIRE')">FIRE (0)</button>
-            <button class="filter-pill supplies" onclick="setResponderFilter('SUPPLIES')">SUPPLIES (0)</button>
+            <button class="filter-pill" onclick="setResponderFilter('MEDICAL')">MEDICAL (1)</button>
+            <button class="filter-pill" onclick="setResponderFilter('TRAPPED')">TRAPPED (1)</button>
+            <button class="filter-pill" onclick="setResponderFilter('FIRE')">FIRE (0)</button>
+            <button class="filter-pill" onclick="setResponderFilter('SUPPLIES')">SUPPLIES (0)</button>
           </div>
 
           <!-- Incidents Feed -->
@@ -207,21 +131,8 @@
         <!-- VIEW 3: TACTICAL LOG VIEW -->
         <div id="logView" class="view-container" style="display: none;">
           <div class="log-controls-bar">
-            <div class="log-search-row">
-              <div class="search-input-box">
-                <span class="material-symbols-rounded">search</span>
-                <input type="text" id="logSearchInput" placeholder="Filter log output..." oninput="renderLogs()">
-              </div>
-              <button class="icon-action-btn" title="Copy all logs" onclick="copyAllLogs()">
-                <span class="material-symbols-rounded">content_copy</span>
-              </button>
-            </div>
-            <div class="log-filter-chips">
-              <button class="log-chip active" onclick="setLogFilter('ALL')">All</button>
-              <button class="log-chip" onclick="setLogFilter('PEER')">Connections</button>
-              <button class="log-chip" onclick="setLogFilter('RADIO')">Radio / Packets</button>
-              <button class="log-chip" onclick="setLogFilter('PERM')">Permissions</button>
-              <button class="log-chip warn" onclick="setLogFilter('WARN')">Warnings / Errors</button>
+            <div class="search-input-box">
+              <input type="text" id="logSearchInput" placeholder="Filter logs..." oninput="renderLogs()">
             </div>
           </div>
           <div class="log-terminal" id="logTerminal"></div>
@@ -232,57 +143,35 @@
     <!-- Live Simulation Control Panel (Desktop Side Panel) -->
     <aside class="simulation-side-panel">
       <div class="panel-header">
-        <span class="material-symbols-rounded">tune</span>
-        <h2>MeshSync Interactive Simulator</h2>
+        <h2>MeshSync Simulator</h2>
       </div>
-      <p class="panel-desc">Test real-time offline mesh interactions directly in your browser:</p>
+      <p class="panel-desc">Minimalist P2P offline mesh verification:</p>
 
       <div class="sim-section">
-        <h3>1. Broadcast Emergency SOS</h3>
-        <p>Trigger an SOS from this device and watch propagation states evolve.</p>
-        <button class="sim-btn red" onclick="openSosModal('medical')">
-          <span class="material-symbols-rounded">sos</span>
-          <span>Open SOS Dispatcher</span>
-        </button>
+        <h3>1. Emergency Trigger</h3>
+        <button class="sim-btn red" onclick="openSosModal('medical')">Broadcast SOS</button>
       </div>
 
       <div class="sim-section">
-        <h3>2. Simulate Inbound Mesh Events</h3>
+        <h3>2. Theme & Display</h3>
         <div class="sim-grid">
-          <button class="sim-btn" onclick="simReceiveInboundSos()">
-            <span class="material-symbols-rounded">sensors</span>
-            <span>Receive Inbound SOS</span>
-          </button>
-          <button class="sim-btn" onclick="simReceiveResponderAck()">
-            <span class="material-symbols-rounded">verified</span>
-            <span>Receive Responder ACK</span>
-          </button>
-          <button class="sim-btn" onclick="simTogglePeer()">
-            <span class="material-symbols-rounded">group_add</span>
-            <span>Add / Remove Peer</span>
-          </button>
-          <button class="sim-btn" onclick="simToggleGpsState()">
-            <span class="material-symbols-rounded">location_searching</span>
-            <span>Toggle GPS Health</span>
-          </button>
+          <button class="sim-btn" onclick="toggleTheme()">Toggle Dark / Light Mode</button>
+          <button class="sim-btn" onclick="simToggleGpsState()">Toggle GPS Status</button>
         </div>
       </div>
 
       <div class="sim-section">
-        <h3>3. Role Demonstration</h3>
+        <h3>3. Simulate Inbound Mesh Events</h3>
         <div class="sim-grid">
-          <button class="sim-btn" onclick="setRole('victim')">Switch to Victim / Citizen</button>
-          <button class="sim-btn" onclick="setRole('responder')">Switch to Search & Rescue</button>
+          <button class="sim-btn" onclick="simReceiveInboundSos()">Inbound SOS</button>
+          <button class="sim-btn" onclick="simReceiveResponderAck()">Responder ACK</button>
+          <button class="sim-btn" onclick="simTogglePeer()">Toggle Peer Link</button>
+          <button class="sim-btn" onclick="setRole(state.role === 'victim' ? 'responder' : 'victim')">Toggle Role</button>
         </div>
       </div>
 
       <div class="panel-footer">
-        <div class="badge-row">
-          <span class="badge">Google Nearby P2P_CLUSTER</span>
-          <span class="badge">Store & Forward</span>
-          <span class="badge">SHA-256 Deduplication</span>
-        </div>
-        <div class="footer-note">v.0.2 Push by - Aryan Time - 21.00 IST</div>
+        <div>v.0.2 Push by - Aryan Time - 21.00 IST</div>
       </div>
     </aside>
   </div>
@@ -290,62 +179,34 @@
   <!-- MODAL: SOS Compose Dispatcher -->
   <div class="modal-overlay" id="sosModal" style="display: none;">
     <div class="modal-sheet">
-      <div class="modal-drag-handle"></div>
       <div class="modal-header">
-        <div class="modal-icon-badge">
-          <span class="material-symbols-rounded">sos</span>
-        </div>
-        <div>
-          <h3>Broadcast Emergency SOS</h3>
-          <p>Select category and details to broadcast over mesh</p>
-        </div>
-        <button class="modal-close-btn" onclick="closeSosModal()">
-          <span class="material-symbols-rounded">close</span>
-        </button>
+        <h3>Broadcast Emergency SOS</h3>
+        <button class="modal-close-btn" onclick="closeSosModal()">✕</button>
       </div>
 
       <div class="modal-body">
-        <label class="field-label">Emergency Category</label>
+        <label class="field-label">Category</label>
         <div class="category-chip-group">
-          <button class="cat-chip medical active" onclick="selectModalCategory('medical', this)">
-            <span class="material-symbols-rounded">medical_services</span>
-            <span>MEDICAL</span>
-          </button>
-          <button class="cat-chip trapped" onclick="selectModalCategory('trapped', this)">
-            <span class="material-symbols-rounded">person_pin_circle</span>
-            <span>TRAPPED</span>
-          </button>
-          <button class="cat-chip fire" onclick="selectModalCategory('fire', this)">
-            <span class="material-symbols-rounded">local_fire_department</span>
-            <span>FIRE</span>
-          </button>
-          <button class="cat-chip supplies" onclick="selectModalCategory('supplies', this)">
-            <span class="material-symbols-rounded">inventory_2</span>
-            <span>SUPPLIES</span>
-          </button>
+          <button class="cat-chip active" onclick="selectModalCategory('medical', this)">MEDICAL</button>
+          <button class="cat-chip" onclick="selectModalCategory('trapped', this)">TRAPPED</button>
+          <button class="cat-chip" onclick="selectModalCategory('fire', this)">FIRE</button>
+          <button class="cat-chip" onclick="selectModalCategory('supplies', this)">SUPPLIES</button>
         </div>
 
         <label class="field-label">People in Danger</label>
         <div class="headcount-counter-card">
-          <div class="counter-label-group">
-            <strong>Casualty / Survivor Count</strong>
-            <span>Total headcount needing assistance</span>
-          </div>
-          <div class="counter-actions">
+          <span>Headcount needing help</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
             <button class="counter-btn" onclick="adjustHeadcount(-1)">-</button>
-            <span class="counter-number" id="modalHeadcount">1</span>
+            <span id="modalHeadcount" style="font-weight: bold; width: 20px; text-align: center;">1</span>
             <button class="counter-btn" onclick="adjustHeadcount(1)">+</button>
           </div>
         </div>
 
-        <label class="field-label">Specific Details / Landmarks (optional)</label>
-        <textarea id="modalDetailsText" maxlength="140" placeholder="e.g. 2nd floor, stairwell blocked, need water"></textarea>
-        <div class="char-counter"><span id="charCount">0</span> / 140</div>
+        <label class="field-label">Details / Landmark (optional)</label>
+        <textarea id="modalDetailsText" maxlength="140" placeholder="e.g. 2nd floor, stairwell blocked"></textarea>
 
-        <button class="dispatch-sos-btn" onclick="submitSos()">
-          <span class="material-symbols-rounded">emergency_share</span>
-          <span>BROADCAST DISTRESS SIGNAL</span>
-        </button>
+        <button class="dispatch-sos-btn" onclick="submitSos()">BROADCAST SOS</button>
       </div>
     </div>
   </div>
@@ -353,26 +214,11 @@
   <!-- MODAL: Connected Peers Inspector -->
   <div class="modal-overlay" id="peersModal" style="display: none;">
     <div class="modal-sheet">
-      <div class="modal-drag-handle"></div>
       <div class="modal-header">
-        <div class="modal-icon-badge cyan">
-          <span class="material-symbols-rounded">hub</span>
-        </div>
-        <div>
-          <h3>Connected Mesh Nodes</h3>
-          <p id="modalPeersSubtitle">2 directly reachable peers via P2P Cluster</p>
-        </div>
-        <button class="modal-close-btn" onclick="closePeersModal()">
-          <span class="material-symbols-rounded">close</span>
-        </button>
+        <h3>Connected Mesh Nodes</h3>
+        <button class="modal-close-btn" onclick="closePeersModal()">✕</button>
       </div>
-      <div class="modal-body">
-        <div id="peersListContainer" class="peers-list-group"></div>
-        <div class="mesh-info-box">
-          <span class="material-symbols-rounded">info</span>
-          <span>Store-and-forward relay: Packets hop seamlessly between nearby devices even if destination is miles away.</span>
-        </div>
-      </div>
+      <div id="peersListContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
   </div>
 

@@ -24,60 +24,23 @@
 
 ---
 
-## 🎨 v0.2 Frontend Modernization & Tactical UI Enhancements
+## 🎨 v0.2 Minimalist Frontend Redesign
 
-The entire user interface has been overhauled with a modern, high-contrast, tactical design system tailored for high-stress disaster scenarios.
+The user interface has been completely redesigned with a **clean minimalist aesthetic**:
 
-### 1. Tactical Design System & Color Palette (`mesh_theme.dart`)
-- **OLED Dark Mode**: Optimized for low battery consumption and night/low-light emergency operations.
-- **Semantic Emergency Categorization**:
-  - 🔴 **Medical Emergency**: Crimson Red (`#EF4444`)
-  - 🟠 **Trapped / Stranded**: Safety Amber (`#F59E0B`)
-  - 🔥 **Fire Hazard**: Deep Flame Orange (`#FF5722`)
-  - 💧 **Supplies (Food/Water)**: Signal Cyan (`#0EA5E9`)
-  - 🟢 **Safe / Self-Resolved**: Emerald Green (`#10B981`)
-  - ⚡ **Mesh Radio / Signals**: Neon Electric Cyan (`#00E5FF`)
-- Customized tactical cards, glassmorphic surfaces, input borders, glowing status dots, and high-visibility chips.
-
-### 2. Network Status Header & Peer Node Inspector (`main.dart`, `peers_sheet.dart`)
-- **Tactical Header Bar**: Displays device call-sign and active connected peer count badge.
-- **Direct Mesh Node Inspector (`PeersSheet`)**: Modal sheet detailing all directly connected P2P cluster peers, endpoint IDs, roles (`CITIZEN` vs `RESPONDER`), and link health.
-- **Mesh Radio Control & Diagnostics Bar**:
-  - Glowing status indicator (Online vs Standby).
-  - One-tap radio toggle (Start Mesh / Stop Radio).
-  - Real-time connection handshake feedback indicator.
-  - Proactive GPS & Location Services warning banner with direct "Fix GPS" action.
-- **Tactical Role Selector**: High-contrast toggle between **Victim / Citizen** and **Search & Rescue Responder**.
-
-### 3. Victim Distress Interface (`victim_screen.dart`)
-- **Pulsating SOS Hero Radar**: Animated visual beacon with one-tap quick emergency presets (Medical, Trapped, Fire, Supplies).
-- **Rapid-Dispatch SOS Sheet**: Category selector cards, interactive headcount stepper (`-` / `+`), landmark/notes input with live character cap, and high-visibility broadcast trigger.
-- **Active Distress Status Tracking**:
-  - Clear real-time status progression:
-    - ⏳ *Broadcasting offline · Searching for nearby peers*
-    - 📡 *Relayed across N nearby devices*
-    - 🛡️ *RESPONDER ACKNOWLEDGED — Help is incoming!* (with glowing emerald verification container)
-- **"I Am Safe" Resolution Action**: Streamlined self-resolution flow with confirmation dialog that floods `CANCEL` (Self-Resolved) across the mesh.
-- **Passive Relay Guide**: Educational card explaining how the device silently relays distress packets for others in the disaster zone.
-
-### 4. Search & Rescue Command Dashboard (`responder_screen.dart`)
-- **Command Metrics Banner**: Real-time summary tiles showing *Active SOS*, *Total People At Risk (summed headcounts)*, and *ACK Confirmed*.
-- **Triage Category Filter Bar**: Filter incidents by All, Medical, Trapped, Fire, or Supplies.
-- **Rich Incident Triage Cards**:
-  - High-visibility category badge and icon.
-  - Headcount badge (`👥 N People`).
-  - Hop count distance indicator (`Direct link` vs `N hops`).
-  - Time elapsed counter and origin device ID hash (`#origin`).
-  - Emergency note container.
-  - Auto-ACK confirmation badge.
-  - "Mark Rescued & Close" resolution button with safety confirmation dialog.
-- **Empty State**: Animated radar scanning indicator when frequencies are clear.
-
-### 5. Diagnostics Terminal (`log_view.dart`)
-- **Syntax-Highlighted Log Badges**: Color-coded badges for `[PEER]`, `[DISC]`, `[RECV]`, `[WARN]`, `[PERM]`, `[ROLE]`, and `[INFO]`.
-- **Search & Filter Controls**: Real-time substring search and quick-filter category pills (All, Connections, Radio/Packets, Permissions, Warnings/Errors).
-- **Monospace Timestamp Pills**: Formatted timestamp chips for timeline tracing.
-- **One-Tap Copy All**: Export full diagnostic log to system clipboard.
+- **Pure Minimalism & Zero Glassmorphism**: Removed all glassmorphic cards, gradients, and heavy shadows in favor of flat, clean borders, crisp contrast, and functional layouts.
+- **Color Scheme**:
+  - **Black Background for Dark Mode**: True black (`#000000`) for OLED power savings in emergency situations.
+  - **Clean White for Light Mode**: `#FFFFFF` with high contrast.
+  - **Bold Red SOS Button**: High-visibility emergency red (`#D32F2F`) for the primary distress trigger.
+  - **Dark / Light Mode Toggle**: Instant switching between dark and light themes.
+- **Typography**: Clean **Arial** font family used throughout the interface.
+- **Victim & Responder Views**:
+  - Direct 1-tap SOS trigger and simple emergency category presets (Medical, Trapped, Fire, Supplies).
+  - Streamlined headcount stepper and landmark note input.
+  - Clear delivery tracking (*Broadcasting* $\rightarrow$ *Relaying* $\rightarrow$ *Responder Acknowledged*).
+  - Search & Rescue incident triage dashboard with live metrics and resolution actions.
+- **Interactive Localhost Web Simulator**: Run on `http://localhost:8000` for live browser verification.
 
 ---
 

@@ -1,14 +1,14 @@
-// MeshSync Interactive Web Simulator State
+// MeshSync Minimalist Interactive Web Simulator State
 const state = {
   role: 'victim', // 'victim' or 'responder'
   radioRunning: true,
   gpsEnabled: true,
+  isLightMode: false,
   nickname: 'C|dev-K7P2',
   selectedModalCat: 'medical',
   modalHeadcount: 1,
   activeTab: 'mesh',
   responderFilter: 'ALL',
-  logFilter: 'ALL',
 
   peers: [
     { endpointId: 'N9X2', name: 'C|dev-F4W9', isResponder: false },
@@ -20,7 +20,7 @@ const state = {
       id: 'e4a8b29c11f09d31',
       cat: 'medical',
       n: 2,
-      txt: '2nd floor collapse near stairwell B, need splints and stretcher',
+      txt: '2nd floor collapse near stairwell B, need splints',
       ts: Date.now() - 140000,
       acked: true
     }
@@ -32,7 +32,7 @@ const state = {
       origin: '8b7f12',
       cat: 'medical',
       n: 2,
-      txt: '2nd floor collapse near stairwell B, need splints and stretcher',
+      txt: '2nd floor collapse near stairwell B, need splints',
       ts: Date.now() - 140000,
       hops: 0,
       acked: true
@@ -42,7 +42,7 @@ const state = {
       origin: '3a59d8',
       cat: 'trapped',
       n: 3,
-      txt: 'Elevator stalled between floors 3 & 4. Smoke rising.',
+      txt: 'Elevator stalled between floors 3 & 4.',
       ts: Date.now() - 320000,
       hops: 2,
       acked: false
@@ -50,42 +50,31 @@ const state = {
   ],
 
   logs: [
-    { stamp: '20:45:02', tag: 'INFO', text: 'I am C|dev-K7P2 (origin: 8b7f12)' },
-    { stamp: '20:45:05', tag: 'PERM', text: 'perm location: GRANTED, bluetoothScan: GRANTED' },
-    { stamp: '20:45:08', tag: 'INFO', text: 'started — advertising=true discovering=true' },
-    { stamp: '20:45:15', tag: 'PEER', text: 'found C|dev-F4W9 (N9X2) — deferring to dial' },
-    { stamp: '20:45:18', tag: 'PEER', text: 'CONNECTED to C|dev-F4W9' },
-    { stamp: '20:45:22', tag: 'PEER', text: 'CONNECTED to R|SAR-ALPHA' },
-    { stamp: '20:46:01', tag: 'RECV', text: '<-- {"t":"MSG","core":{"id":"71c9df03a89e4521","cat":"TRAPPED","n":3}}' },
-    { stamp: '20:47:10', tag: 'RECV', text: '<-- {"t":"MSG","core":{"type":"ACK","ref":"e4a8b29c11f09d31"}}' }
+    { stamp: '20:45:02', text: 'I am C|dev-K7P2 (origin: 8b7f12)' },
+    { stamp: '20:45:05', text: 'location: GRANTED, bluetooth: GRANTED' },
+    { stamp: '20:45:08', text: 'started — advertising=true discovering=true' },
+    { stamp: '20:45:18', text: 'CONNECTED to C|dev-F4W9' },
+    { stamp: '20:45:22', text: 'CONNECTED to R|SAR-ALPHA' },
+    { stamp: '20:46:01', text: '<-- MSG id: 71c9df03 (TRAPPED, 3 people)' },
+    { stamp: '20:47:10', text: '<-- ACK ref: e4a8b29c' }
   ]
 };
 
-// Initialization
+// Init
 document.addEventListener('DOMContentLoaded', () => {
-  updateClock();
-  setInterval(updateClock, 1000);
   setupEvents();
   renderAll();
 });
 
-function updateClock() {
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const el = document.getElementById('deviceClock');
-  if (el) el.textContent = timeStr;
+function setupEvents() {
+  document.getElementById('openPeersBtn')?.addEventListener('click', openPeersModal);
 }
 
-function setupEvents() {
-  const charCounter = document.getElementById('charCount');
-  const detailsInput = document.getElementById('modalDetailsText');
-  if (detailsInput && charCounter) {
-    detailsInput.addEventListener('input', (e) => {
-      charCounter.textContent = e.target.value.length;
-    });
-  }
-
-  document.getElementById('openPeersBtn')?.addEventListener('click', openPeersModal);
+function toggleTheme() {
+  state.isLightMode = !state.isLightMode;
+  document.body.classList.toggle('light-mode', state.isLightMode);
+  document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Dark' : 'Light';
+  showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
 }
 
 function switchTab(tab) {
@@ -117,18 +106,16 @@ function setRole(role) {
   document.getElementById('roleResponderBtn').classList.toggle('active', role === 'responder');
   document.getElementById('nodeNickname').textContent = state.nickname;
 
-  addLog('ROLE', `role → ${role === 'responder' ? 'Search & Rescue' : 'Victim'}, now advertising as ${state.nickname}`);
-  showToast(`Switched role to ${role === 'responder' ? 'Search & Rescue' : 'Victim / Citizen'}`);
+  addLog(`role changed → ${role === 'responder' ? 'Search & Rescue' : 'Victim'}`);
+  showToast(`Role: ${role === 'responder' ? 'Search & Rescue' : 'Victim / Citizen'}`);
 
-  if (state.activeTab === 'mesh') {
-    switchTab('mesh');
-  }
+  if (state.activeTab === 'mesh') switchTab('mesh');
   renderAll();
 }
 
 function toggleRadio() {
   state.radioRunning = !state.radioRunning;
-  addLog('INFO', state.radioRunning ? 'started — advertising=true discovering=true' : 'stopped');
+  addLog(state.radioRunning ? 'radio started' : 'radio stopped');
   renderRadioStatus();
   showToast(state.radioRunning ? 'Mesh radio started' : 'Mesh radio stopped');
 }
@@ -136,54 +123,46 @@ function toggleRadio() {
 function toggleGps(enable) {
   state.gpsEnabled = enable !== undefined ? enable : !state.gpsEnabled;
   document.getElementById('gpsWarningCard').style.display = state.gpsEnabled ? 'none' : 'flex';
-  if (!state.gpsEnabled) {
-    addLog('WARN', 'WARNING: location services are OFF — turn GPS on');
-  } else {
-    addLog('PERM', 'GPS enabled: Location services healthy');
-  }
+  addLog(state.gpsEnabled ? 'GPS turned on' : 'WARNING: GPS turned off');
 }
 
 function renderRadioStatus() {
-  const glow = document.getElementById('radioGlowDot');
   const badge = document.getElementById('radioStateBadge');
   const subtext = document.getElementById('radioSubtext');
   const toggleBtn = document.getElementById('radioToggleBtn');
-  const toggleIcon = document.getElementById('radioToggleIcon');
-  const toggleLabel = document.getElementById('radioToggleLabel');
+  const dot = document.getElementById('radioDot');
 
   if (state.radioRunning) {
-    glow.className = 'status-glow-dot active';
-    badge.className = 'status-badge active';
     badge.textContent = 'ONLINE';
-    subtext.textContent = `Advertising & Discovering · ${state.peers.length} in direct range`;
-    toggleBtn.className = 'radio-toggle-btn active';
-    toggleIcon.textContent = 'stop';
-    toggleLabel.textContent = 'Stop Radio';
+    badge.style.backgroundColor = 'var(--safe-green)';
+    subtext.textContent = `Advertising & Discovering · ${state.peers.length} in range`;
+    toggleBtn.textContent = 'Stop';
+    toggleBtn.style.backgroundColor = 'var(--sos-red)';
+    dot.style.backgroundColor = 'var(--safe-green)';
   } else {
-    glow.className = 'status-glow-dot';
-    badge.className = 'status-badge';
-    badge.textContent = 'STANDBY';
-    subtext.textContent = 'Mesh radio stopped';
-    toggleBtn.className = 'radio-toggle-btn';
-    toggleIcon.textContent = 'play_arrow';
-    toggleLabel.textContent = 'Start Mesh';
+    badge.textContent = 'OFFLINE';
+    badge.style.backgroundColor = 'var(--text-muted)';
+    subtext.textContent = 'Radio idle';
+    toggleBtn.textContent = 'Start';
+    toggleBtn.style.backgroundColor = 'var(--text-color)';
+    toggleBtn.style.color = 'var(--bg-color)';
+    dot.style.backgroundColor = 'var(--text-muted)';
   }
 
-  const peersLabel = document.getElementById('peersCountLabel');
-  if (peersLabel) peersLabel.textContent = `${state.peers.length} Peer${state.peers.length === 1 ? '' : 's'}`;
+  const peersBtn = document.getElementById('openPeersBtn');
+  if (peersBtn) peersBtn.textContent = `${state.peers.length} Peer${state.peers.length === 1 ? '' : 's'}`;
 }
 
-// Modal logic
+// Modal
 function openSosModal(preselectCat = 'medical') {
   state.selectedModalCat = preselectCat;
   state.modalHeadcount = 1;
   document.getElementById('modalHeadcount').textContent = '1';
   document.getElementById('modalDetailsText').value = '';
-  document.getElementById('charCount').textContent = '0';
 
   const chips = document.querySelectorAll('.category-chip-group .cat-chip');
   chips.forEach(chip => {
-    chip.classList.toggle('active', chip.classList.contains(preselectCat));
+    chip.classList.toggle('active', chip.textContent.toLowerCase() === preselectCat);
   });
 
   document.getElementById('sosModal').style.display = 'flex';
@@ -200,10 +179,8 @@ function selectModalCategory(cat, btn) {
 }
 
 function adjustHeadcount(delta) {
-  const current = state.modalHeadcount;
-  const next = Math.max(1, current + delta);
-  state.modalHeadcount = next;
-  document.getElementById('modalHeadcount').textContent = String(next);
+  state.modalHeadcount = Math.max(1, state.modalHeadcount + delta);
+  document.getElementById('modalHeadcount').textContent = String(state.modalHeadcount);
 }
 
 function submitSos() {
@@ -226,55 +203,40 @@ function submitSos() {
     hops: 0
   });
 
-  addLog('INFO', `created SOS ${newId.substring(0, 8)} (${newMsg.cat.toUpperCase()}, ${newMsg.n} people)`);
-  addLog('RADIO', `broadcast SOS packet to ${state.peers.length} directly reachable peers`);
+  addLog(`created SOS #${newId.substring(0, 6)} (${newMsg.cat.toUpperCase()}, ${newMsg.n} people)`);
 
   closeSosModal();
   renderAll();
-  showToast(`Distress Signal Broadcasted! ID: #${newId.substring(0, 6)}`);
+  showToast('Distress Signal Broadcasted!');
 }
 
 function markSafe(id) {
-  if (confirm('Mark yourself safe? This floods a CANCEL packet across all connected mesh nodes.')) {
-    state.myMessages = state.myMessages.filter(m => m.id !== id);
-    state.incidents = state.incidents.filter(m => m.id !== id);
-    addLog('INFO', `sent CANCEL for ${id.substring(0, 8)} (reason: SELF_RESOLVED)`);
-    showToast('Distress signal cancelled and marked safe.');
-    renderAll();
-  }
+  state.myMessages = state.myMessages.filter(m => m.id !== id);
+  state.incidents = state.incidents.filter(m => m.id !== id);
+  addLog(`CANCEL sent for #${id.substring(0, 6)} (SELF_RESOLVED)`);
+  showToast('Marked as safe.');
+  renderAll();
 }
 
 function closeIncident(id) {
-  if (confirm('Close and resolve incident? This floods a RESCUED cancel packet across the mesh.')) {
-    state.incidents = state.incidents.filter(m => m.id !== id);
-    state.myMessages = state.myMessages.filter(m => m.id !== id);
-    addLog('INFO', `responder closed incident ${id.substring(0, 8)} (reason: RESCUED)`);
-    showToast('Incident closed and broadcasted as RESCUED.');
-    renderAll();
-  }
+  state.incidents = state.incidents.filter(m => m.id !== id);
+  state.myMessages = state.myMessages.filter(m => m.id !== id);
+  addLog(`closed incident #${id.substring(0, 6)} (RESCUED)`);
+  showToast('Incident closed.');
+  renderAll();
 }
 
 function openPeersModal() {
   const container = document.getElementById('peersListContainer');
-  const sub = document.getElementById('modalPeersSubtitle');
-  sub.textContent = `${state.peers.length} directly reachable peer${state.peers.length === 1 ? '' : 's'} via P2P Cluster`;
-
   container.innerHTML = state.peers.map(p => `
-    <div class="peer-row-item">
-      <div class="peer-avatar ${p.isResponder ? 'responder' : ''}">
-        <span class="material-symbols-rounded">${p.isResponder ? 'medical_services' : 'phone_android'}</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--border-color); border-radius:6px; background-color:var(--surface-color);">
+      <div>
+        <div style="font-weight:bold; font-size:12px;">${p.name}</div>
+        <div style="font-size:10px; color:var(--text-muted);">Endpoint: ${p.endpointId}</div>
       </div>
-      <div class="peer-info">
-        <div class="peer-name-row">
-          <span class="peer-name">${p.name}</span>
-          <span class="peer-badge ${p.isResponder ? 'responder' : ''}">${p.isResponder ? 'RESPONDER' : 'CITIZEN'}</span>
-        </div>
-        <div class="peer-endpoint">Endpoint: ${p.endpointId} · Direct radio active</div>
-      </div>
-      <div class="peer-live-dot"></div>
+      <span style="font-size:9px; font-weight:bold; padding:2px 6px; border-radius:4px; background-color:var(--card-color); border:1px solid var(--border-color);">${p.isResponder ? 'RESPONDER' : 'CITIZEN'}</span>
     </div>
   `).join('');
-
   document.getElementById('peersModal').style.display = 'flex';
 }
 
@@ -282,7 +244,7 @@ function closePeersModal() {
   document.getElementById('peersModal').style.display = 'none';
 }
 
-// Rendering
+// Render
 function renderAll() {
   renderRadioStatus();
   renderMyMessages();
@@ -293,50 +255,33 @@ function renderAll() {
 function renderMyMessages() {
   const list = document.getElementById('myMessagesList');
   const countBadge = document.getElementById('myActiveCount');
-  countBadge.textContent = `${state.myMessages.length} Active`;
+  countBadge.textContent = `${state.myMessages.length} active`;
 
   if (state.myMessages.length === 0) {
     list.innerHTML = `
-      <div style="background-color: var(--surface-dark); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; text-align: center;">
-        <span class="material-symbols-rounded" style="font-size: 36px; color: var(--mesh-teal-glow);">shield</span>
-        <div style="font-weight: bold; margin: 8px 0 4px;">No Active Distress Signals</div>
-        <p style="font-size: 12px; color: var(--text-dim);">When you trigger an SOS, it automatically propagates across peer-to-peer devices even without cell service.</p>
+      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:8px; padding:16px; text-align:center; font-size:12px; color:var(--text-muted);">
+        No active signals. Your phone relays messages for others in the mesh.
       </div>
     `;
     return;
   }
 
-  list.innerHTML = state.myMessages.map(m => {
-    const elapsed = formatElapsed(m.ts);
-    return `
-      <div class="incident-card ${m.acked ? 'acked' : ''}">
-        <div class="card-status-header ${m.acked ? 'acked' : ''}">
-          <span class="material-symbols-rounded">${m.acked ? 'verified' : 'wifi_tethering'}</span>
-          <span>${m.acked ? 'RESPONDER ACKNOWLEDGED — Help incoming!' : `Relayed across ${state.peers.length} nearby devices`}</span>
-          <span class="status-time">${elapsed}</span>
-        </div>
-        <div class="card-body">
-          <div class="card-main-info">
-            <div class="cat-icon-container ${m.cat}">
-              <span class="material-symbols-rounded">${getCatIcon(m.cat)}</span>
-            </div>
-            <div class="card-title-group">
-              <div class="card-title">${getCatTitle(m.cat)}</div>
-              <div class="card-meta-row">
-                <span class="meta-pill">${m.n} ${m.n === 1 ? 'Person' : 'People'}</span>
-                <span class="meta-pill font-mono">ID: #${m.id.substring(0, 6)}</span>
-              </div>
-            </div>
-          </div>
-          ${m.txt ? `<div class="card-details-box">${escapeHtml(m.txt)}</div>` : ''}
-          <button class="card-action-btn" onclick="markSafe('${m.id}')">
-            <span class="material-symbols-rounded">health_and_safety</span>
-            <span>I Am Safe (Cancel Distress)</span>
-          </button>
-        </div>
+  list.innerHTML = state.myMessages.map(m => `
+    <div class="incident-card ${m.acked ? 'acked' : ''}">
+      <div class="card-status-header ${m.acked ? 'acked' : ''}">
+        <span>${m.acked ? '● Responder Acknowledged' : `○ Relayed to ${state.peers.length} peers`}</span>
+        <span style="font-weight:normal; font-size:10px; color:var(--text-muted);">${formatElapsed(m.ts)}</span>
       </div>
-    `;
-  }).join('');
+      <div class="card-body">
+        <div class="card-title-row">
+          <span>${m.cat.toUpperCase()}</span>
+          <span style="font-weight:normal; font-size:11px;">${m.n} ${m.n === 1 ? 'Person' : 'People'}</span>
+        </div>
+        ${m.txt ? `<div class="card-details-box">${escapeHtml(m.txt)}</div>` : ''}
+        <button class="card-action-btn" onclick="markSafe('${m.id}')">I Am Safe</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function setResponderFilter(cat) {
@@ -363,55 +308,29 @@ function renderResponderView() {
 
   if (filtered.length === 0) {
     list.innerHTML = `
-      <div style="background-color: var(--surface-dark); border: 1px solid var(--card-border); border-radius: 18px; padding: 32px 20px; text-align: center;">
-        <span class="material-symbols-rounded" style="font-size: 40px; color: var(--mesh-cyan);">radar</span>
-        <div style="font-weight: bold; margin: 12px 0 4px;">Mesh Frequencies Clear</div>
-        <p style="font-size: 12px; color: var(--text-dim);">Listening for offline distress packets in peer hop radius...</p>
+      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:8px; padding:20px; text-align:center; font-size:12px; color:var(--text-muted);">
+        No distress signals in range.
       </div>
     `;
     return;
   }
 
-  list.innerHTML = filtered.map(i => {
-    const elapsed = formatElapsed(i.ts);
-    return `
-      <div class="incident-card">
-        <div class="card-status-header">
-          <span class="material-symbols-rounded">${getCatIcon(i.cat)}</span>
-          <span>${getCatTitle(i.cat)}</span>
-          <span class="status-time">#${i.origin} · ${elapsed}</span>
-        </div>
-        <div class="card-body">
-          <div class="card-main-info">
-            <div class="cat-icon-container ${i.cat}">
-              <span class="material-symbols-rounded">${getCatIcon(i.cat)}</span>
-            </div>
-            <div class="card-title-group">
-              <div class="card-title">${getCatTitle(i.cat)}</div>
-              <div class="card-meta-row">
-                <span class="meta-pill">${i.n} ${i.n === 1 ? 'Person' : 'People'}</span>
-                <span class="meta-pill cyan">${i.hops === 0 ? 'Direct link' : `${i.hops} hops`}</span>
-                ${i.acked ? '<span class="meta-pill green">Auto-ACK</span>' : ''}
-              </div>
-            </div>
-          </div>
-          ${i.txt ? `<div class="card-details-box">${escapeHtml(i.txt)}</div>` : ''}
-          <button class="card-action-btn" onclick="closeIncident('${i.id}')">
-            <span class="material-symbols-rounded">verified_user</span>
-            <span>Mark Rescued & Close Incident</span>
-          </button>
-        </div>
+  list.innerHTML = filtered.map(i => `
+    <div class="incident-card">
+      <div class="card-status-header">
+        <span>${i.cat.toUpperCase()}</span>
+        <span style="font-weight:normal; font-size:10px; color:var(--text-muted);">#${i.origin} · ${formatElapsed(i.ts)} · ${i.hops === 0 ? 'Direct' : `${i.hops} hops`}</span>
       </div>
-    `;
-  }).join('');
-}
-
-function setLogFilter(tag) {
-  state.logFilter = tag;
-  document.querySelectorAll('.log-filter-chips .log-chip').forEach(c => {
-    c.classList.toggle('active', c.textContent.toUpperCase().includes(tag) || (tag === 'ALL' && c.textContent === 'All'));
-  });
-  renderLogs();
+      <div class="card-body">
+        <div class="card-title-row">
+          <span>${i.n} ${i.n === 1 ? 'Person' : 'People'}</span>
+          ${i.acked ? '<span style="color:var(--safe-green); font-size:10px;">Auto-ACK</span>' : ''}
+        </div>
+        ${i.txt ? `<div class="card-details-box">${escapeHtml(i.txt)}</div>` : ''}
+        <button class="card-action-btn" onclick="closeIncident('${i.id}')">Mark Rescued & Close</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderLogs() {
@@ -419,124 +338,85 @@ function renderLogs() {
   const terminal = document.getElementById('logTerminal');
   if (!terminal) return;
 
-  const filtered = state.logs.filter(l => {
-    if (state.logFilter !== 'ALL' && l.tag !== state.logFilter) return false;
-    if (query && !l.text.toLowerCase().includes(query)) return false;
-    return true;
-  });
+  const filtered = state.logs.filter(l => !query || l.text.toLowerCase().includes(query));
 
   terminal.innerHTML = filtered.map(l => `
     <div class="log-row">
       <span class="log-stamp">${l.stamp}</span>
-      <span class="log-tag ${l.tag.toLowerCase()}">${l.tag}</span>
-      <span class="log-text">${escapeHtml(l.text)}</span>
+      <span>${escapeHtml(l.text)}</span>
     </div>
   `).join('');
 }
 
-function addLog(tag, text) {
+function addLog(text) {
   const now = new Date();
   const stamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-  state.logs.unshift({ stamp, tag, text });
-  if (state.logs.length > 200) state.logs.pop();
+  state.logs.unshift({ stamp, text });
+  if (state.logs.length > 100) state.logs.pop();
   renderLogs();
 }
 
-function copyAllLogs() {
-  const text = state.logs.map(l => `${l.stamp} [${l.tag}] ${l.text}`).join('\n');
-  navigator.clipboard.writeText(text);
-  showToast('Logs copied to clipboard');
-}
-
-// Interactive Simulation Handlers
 function simReceiveInboundSos() {
-  const randomCats = ['medical', 'trapped', 'fire', 'supplies'];
-  const cat = randomCats[Math.floor(Math.random() * randomCats.length)];
-  const n = Math.floor(Math.random() * 4) + 1;
+  const cats = ['medical', 'trapped', 'fire', 'supplies'];
+  const cat = cats[Math.floor(Math.random() * cats.length)];
+  const n = Math.floor(Math.random() * 3) + 1;
   const newId = Math.random().toString(16).substring(2, 18);
   const origin = Math.random().toString(16).substring(2, 8);
 
-  const incident = {
+  state.incidents.unshift({
     id: newId,
     origin,
     cat,
     n,
-    txt: `Emergency simulation from Node #${origin} — immediate triage needed`,
+    txt: `Distress signal from #${origin}`,
     ts: Date.now(),
-    hops: Math.floor(Math.random() * 3),
+    hops: Math.floor(Math.random() * 2),
     acked: false
-  };
+  });
 
-  state.incidents.unshift(incident);
-  addLog('RECV', `<-- {"t":"MSG","core":{"id":"${newId.substring(0, 8)}","origin":"${origin}","cat":"${cat.toUpperCase()}","n":${n}}}`);
-  showToast(`Inbound SOS Packet received from Node #${origin}!`);
+  addLog(`<-- Inbound SOS #${newId.substring(0, 6)} (${cat.toUpperCase()}, ${n} people)`);
+  showToast(`Inbound SOS from #${origin}`);
   renderAll();
 }
 
 function simReceiveResponderAck() {
-  if (state.myMessages.length === 0) {
-    showToast('Send an SOS first to receive an ACK confirmation.');
-    return;
-  }
-  const msg = state.myMessages[0];
-  msg.acked = true;
-  addLog('RECV', `<-- {"t":"MSG","core":{"type":"ACK","ref":"${msg.id.substring(0, 8)}"}}`);
-  showToast('Verified: Search & Rescue Responder confirmed your SOS!');
+  if (state.myMessages.length === 0) return;
+  state.myMessages[0].acked = true;
+  addLog(`<-- Responder ACK for #${state.myMessages[0].id.substring(0, 6)}`);
+  showToast('Responder confirmed your SOS!');
   renderAll();
 }
 
 function simTogglePeer() {
   if (state.peers.length > 1) {
-    const dropped = state.peers.pop();
-    addLog('DISC', `disconnected from ${dropped.name}`);
-    showToast(`Peer ${dropped.name} went out of radio range.`);
+    const p = state.peers.pop();
+    addLog(`disconnected from ${p.name}`);
+    showToast(`Disconnected from ${p.name}`);
   } else {
-    const newPeer = { endpointId: 'M2K1', name: 'C|dev-R9Q8', isResponder: false };
-    state.peers.push(newPeer);
-    addLog('PEER', `CONNECTED to ${newPeer.name}`);
-    showToast(`Discovered and paired with ${newPeer.name}!`);
+    const p = { endpointId: 'M2K1', name: 'C|dev-R9Q8', isResponder: false };
+    state.peers.push(p);
+    addLog(`CONNECTED to ${p.name}`);
+    showToast(`Paired with ${p.name}`);
   }
   renderAll();
 }
 
 function simToggleGpsState() {
   toggleGps();
-  showToast(`GPS is now ${state.gpsEnabled ? 'ENABLED' : 'DISABLED'}`);
+  showToast(`GPS: ${state.gpsEnabled ? 'ON' : 'OFF'}`);
 }
 
 function showToast(msg) {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.innerHTML = `<span class="material-symbols-rounded">info</span><span>${escapeHtml(msg)}</span>`;
+  toast.textContent = msg;
   container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
-}
-
-// Helpers
-function getCatIcon(cat) {
-  switch (cat) {
-    case 'medical': return 'medical_services';
-    case 'trapped': return 'person_pin_circle';
-    case 'fire': return 'local_fire_department';
-    case 'supplies': return 'inventory_2';
-    default: return 'emergency';
-  }
-}
-
-function getCatTitle(cat) {
-  switch (cat) {
-    case 'medical': return 'Medical Emergency';
-    case 'trapped': return 'Trapped / Stranded';
-    case 'fire': return 'Fire Hazard';
-    case 'supplies': return 'Needs Food / Water';
-    default: return 'Emergency SOS';
-  }
+  setTimeout(() => toast.remove(), 2500);
 }
 
 function formatElapsed(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 10) return 'Just now';
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   return `${Math.floor(s / 3600)}h ago`;
