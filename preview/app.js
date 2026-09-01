@@ -100,7 +100,6 @@ function renderRadioStatus() {
   const badge = document.getElementById('radioStateBadge');
   const subtext = document.getElementById('radioSubtext');
   const toggleBtn = document.getElementById('radioToggleBtn');
-  const dot = document.getElementById('radioDot');
 
   if (state.radioRunning) {
     badge.textContent = 'ONLINE';
@@ -108,7 +107,6 @@ function renderRadioStatus() {
     subtext.textContent = `Advertising & Discovering · ${state.peers.length} in range`;
     toggleBtn.textContent = 'Stop';
     toggleBtn.style.backgroundColor = 'var(--sos-red)';
-    dot.style.backgroundColor = 'var(--safe-green)';
   } else {
     badge.textContent = 'OFFLINE';
     badge.style.backgroundColor = 'var(--text-muted)';
@@ -116,7 +114,6 @@ function renderRadioStatus() {
     toggleBtn.textContent = 'Start';
     toggleBtn.style.backgroundColor = 'var(--text-color)';
     toggleBtn.style.color = 'var(--bg-color)';
-    dot.style.backgroundColor = 'var(--text-muted)';
   }
 
   const peersBtn = document.getElementById('openPeersBtn');

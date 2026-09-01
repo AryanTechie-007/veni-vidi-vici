@@ -78,38 +78,25 @@ class _MeshHomePageState extends State<MeshHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 10,
-              height: 10,
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: service.isRunning ? MeshTheme.safeGreen : MeshTheme.darkTextDim,
+            Text(
+              'MESHSYNC',
+              style: TextStyle(
+                fontFamily: 'Arial',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
               ),
             ),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MESHSYNC',
-                  style: TextStyle(
-                    fontFamily: 'Arial',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                Text(
-                  'Offline Emergency Relay',
-                  style: TextStyle(
-                    fontFamily: 'Arial',
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
+            Text(
+              'Offline Emergency Relay',
+              style: TextStyle(
+                fontFamily: 'Arial',
+                fontSize: 11,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ],
         ),

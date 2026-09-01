@@ -77,13 +77,6 @@ body {
   gap: 8px;
 }
 
-.status-dot-tiny {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--safe-green);
-}
-
 .brand-title {
   font-size: 15px;
   font-weight: bold;
@@ -114,31 +107,6 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-/* Tab Navigation */
-.tab-nav {
-  display: flex;
-  background-color: var(--surface-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 12px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.tab-btn.active {
-  color: var(--text-color);
-  border-bottom-color: var(--text-color);
 }
 
 /* Content Area */
@@ -484,47 +452,6 @@ body {
   background-color: var(--text-color);
   color: var(--bg-color);
   border-color: var(--text-color);
-}
-
-/* Log Terminal */
-.log-controls-bar {
-  padding: 10px 14px;
-  background-color: var(--surface-color);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.search-input-box input {
-  width: 100%;
-  background-color: var(--card-color);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 10px;
-  color: var(--text-color);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  outline: none;
-}
-
-.log-terminal {
-  flex: 1;
-  padding: 12px;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.log-row {
-  display: flex;
-  gap: 6px;
-}
-
-.log-stamp {
-  color: var(--text-muted);
 }
 
 /* Simulation Side Panel */
