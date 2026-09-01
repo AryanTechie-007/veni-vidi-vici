@@ -50,11 +50,11 @@ class _VictimScreenState extends State<VictimScreen> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: MeshTheme.emergencyRed,
+          backgroundColor: MeshTheme.terracottaRed,
           behavior: SnackBarBehavior.floating,
           content: Text(
-            'SOS broadcasted (ID: ${message.id.substring(0, 8)})',
-            style: const TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, color: Colors.white),
+            'Emergency broadcast dispatched (ID: #${message.id.substring(0, 6)})',
+            style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
       );
@@ -68,26 +68,49 @@ class _VictimScreenState extends State<VictimScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       children: [
-        // --- MINIMALIST HERO SOS SECTION ---
+        // --- PRIMARY FOCAL ACTION: HERO SOS SECTION ---
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
           decoration: BoxDecoration(
             color: theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.dividerColor),
           ),
           child: Column(
             children: [
-              // Bold Pure Red SOS Button
+              Text(
+                'Emergency Broadcast',
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Radio beacon relays over offline mesh to search teams',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Prominent Terracotta Red Primary Button
               SizedBox(
-                width: 140,
-                height: 140,
+                width: 160,
+                height: 160,
                 child: ElevatedButton(
                   onPressed: () => _compose(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: MeshTheme.emergencyRed,
+                    backgroundColor: MeshTheme.terracottaRed,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: const CircleBorder(),
@@ -96,58 +119,50 @@ class _VictimScreenState extends State<VictimScreen> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.sos, size: 48, color: Colors.white),
-                      SizedBox(height: 2),
+                      Icon(Icons.sos_outlined, size: 52, color: Colors.white),
+                      SizedBox(height: 4),
                       Text(
                         'SEND SOS',
                         style: TextStyle(
-                          fontFamily: 'Arial',
-                          fontSize: 16,
+                          fontFamily: 'Georgia',
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
+                          letterSpacing: 1.2,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Tap to broadcast emergency signal over offline mesh',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Arial',
-                  color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Category Quick Presets
+
+              const SizedBox(height: 32),
+
+              // Secondary Category Quick Filters
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _CategoryQuickBtn(
                     category: Category.medical,
                     label: 'Medical',
-                    icon: Icons.medical_services,
+                    icon: Icons.medical_services_outlined,
                     onTap: () => _compose(context, initialCategory: Category.medical),
                   ),
                   _CategoryQuickBtn(
                     category: Category.trapped,
                     label: 'Trapped',
-                    icon: Icons.person_pin_circle,
+                    icon: Icons.person_pin_circle_outlined,
                     onTap: () => _compose(context, initialCategory: Category.trapped),
                   ),
                   _CategoryQuickBtn(
                     category: Category.fire,
                     label: 'Fire',
-                    icon: Icons.local_fire_department,
+                    icon: Icons.local_fire_department_outlined,
                     onTap: () => _compose(context, initialCategory: Category.fire),
                   ),
                   _CategoryQuickBtn(
                     category: Category.supplies,
                     label: 'Supplies',
-                    icon: Icons.inventory_2,
+                    icon: Icons.inventory_2_outlined,
                     onTap: () => _compose(context, initialCategory: Category.supplies),
                   ),
                 ],
@@ -156,53 +171,70 @@ class _VictimScreenState extends State<VictimScreen> {
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 32),
 
-        // --- ACTIVE DISTRESS SIGNALS ---
+        // --- ACTIVE DISTRESS SIGNALS SECTION ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            const Text(
-              'Active Signals',
+            Text(
+              'Active Distress Signals',
               style: TextStyle(
-                fontFamily: 'Arial',
-                fontSize: 15,
+                fontFamily: 'Georgia',
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             if (mine.isNotEmpty)
               Text(
                 '${mine.length} active',
                 style: const TextStyle(
-                  fontFamily: 'Arial',
-                  fontSize: 12,
-                  color: MeshTheme.emergencyRed,
+                  fontFamily: 'Georgia',
+                  fontSize: 13,
+                  color: MeshTheme.terracottaRed,
                   fontWeight: FontWeight.bold,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
 
         if (mine.isEmpty)
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: theme.dividerColor),
             ),
-            child: Center(
-              child: Text(
-                'No active distress signals. Your device will automatically relay messages for other users.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Arial',
-                  color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
-                  fontSize: 12,
-                  height: 1.4,
+            child: Column(
+              children: [
+                Icon(Icons.shield_outlined, size: 36, color: MeshTheme.sageGreen),
+                const SizedBox(height: 12),
+                Text(
+                  'No Distress Signals Active',
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your phone automatically acts as an offline packet courier for nearby survivors.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           )
         else
@@ -213,7 +245,7 @@ class _VictimScreenState extends State<VictimScreen> {
               acked: app.isAcked(message.id),
               onSafe: () => _confirmSafe(context, message.id),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
           ],
       ],
     );
@@ -223,20 +255,20 @@ class _VictimScreenState extends State<VictimScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Mark as Safe?', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold)),
+        title: const Text('Mark as Safe?', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
         content: const Text(
-          'This will cancel the active SOS and notify responders that you are safe.',
-          style: TextStyle(fontFamily: 'Arial'),
+          'This will cancel your active SOS beacon and broadcast that you have self-resolved to all rescue nodes.',
+          style: TextStyle(fontFamily: 'Georgia', fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(fontFamily: 'Arial')),
+            child: const Text('Keep Active', style: TextStyle(fontFamily: 'Georgia')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: MeshTheme.safeGreen),
-            child: const Text('I Am Safe', style: TextStyle(fontFamily: 'Arial')),
+            style: FilledButton.styleFrom(backgroundColor: MeshTheme.sageGreen),
+            child: const Text('Confirm Safe', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -247,7 +279,7 @@ class _VictimScreenState extends State<VictimScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Distress signal marked as safe.', style: TextStyle(fontFamily: 'Arial')),
+            content: Text('Distress signal marked as safe.', style: TextStyle(fontFamily: 'Georgia')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -275,16 +307,16 @@ class _CategoryQuickBtn extends StatelessWidget {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         side: BorderSide(color: theme.dividerColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 18),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontFamily: 'Arial', fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(fontFamily: 'Georgia', fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -307,14 +339,15 @@ class _SentSosCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final core = message.core;
 
     return Container(
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: acked ? MeshTheme.safeGreen : theme.dividerColor,
+          color: acked ? MeshTheme.sageGreen : theme.dividerColor,
           width: acked ? 1.5 : 1.0,
         ),
       ),
@@ -322,39 +355,43 @@ class _SentSosCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: acked ? MeshTheme.safeGreen.withValues(alpha: 0.1) : theme.scaffoldBackgroundColor,
+              color: acked ? MeshTheme.sageGreen.withValues(alpha: 0.1) : theme.scaffoldBackgroundColor,
               border: Border(bottom: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
                 Icon(
-                  acked ? Icons.check_circle : Icons.radio_button_checked,
-                  size: 14,
-                  color: acked ? MeshTheme.safeGreen : MeshTheme.emergencyRed,
+                  acked ? Icons.check_circle_outline : Icons.radio_button_checked,
+                  size: 16,
+                  color: acked ? MeshTheme.sageGreen : MeshTheme.terracottaRed,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    acked ? 'Responder Acknowledged' : 'Relayed across $peerCount peers',
+                    acked ? 'Responder Confirmed Receipt' : 'Relayed across $peerCount mesh nodes',
                     style: TextStyle(
-                      fontFamily: 'Arial',
-                      fontSize: 11,
+                      fontFamily: 'Georgia',
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: acked ? MeshTheme.safeGreen : theme.colorScheme.onSurface,
+                      color: acked ? MeshTheme.sageGreen : theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
                 Text(
                   _elapsed(core.ts),
-                  style: const TextStyle(fontFamily: 'Arial', fontSize: 10),
+                  style: TextStyle(
+                    fontFamily: 'Georgia',
+                    fontSize: 11,
+                    color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+                  ),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -363,31 +400,36 @@ class _SentSosCard extends StatelessWidget {
                   children: [
                     Text(
                       MeshTheme.getCategoryLabel(core.cat),
-                      style: const TextStyle(fontFamily: 'Arial', fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       '${core.n ?? 1} ${(core.n ?? 1) == 1 ? "Person" : "People"}',
-                      style: const TextStyle(fontFamily: 'Arial', fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 12,
+                        color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+                      ),
                     ),
                   ],
                 ),
                 if (core.txt != null && core.txt!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     core.txt!,
-                    style: const TextStyle(fontFamily: 'Arial', fontSize: 12),
+                    style: const TextStyle(fontFamily: 'Georgia', fontSize: 13, height: 1.4),
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: onSafe,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: MeshTheme.safeGreen,
-                      side: const BorderSide(color: MeshTheme.safeGreen),
+                      foregroundColor: MeshTheme.sageGreen,
+                      side: const BorderSide(color: MeshTheme.sageGreen),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: const Text('I Am Safe', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold)),
+                    child: const Text('I Am Safe (Resolve)', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -444,10 +486,10 @@ class _SosSheetState extends State<_SosSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -455,26 +497,26 @@ class _SosSheetState extends State<_SosSheet> {
         children: [
           const Text(
             'Broadcast Emergency SOS',
-            style: TextStyle(fontFamily: 'Arial', fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               for (final c in Category.values)
                 ChoiceChip(
-                  label: Text(c.wire, style: const TextStyle(fontFamily: 'Arial', fontSize: 11)),
+                  label: Text(c.wire, style: const TextStyle(fontFamily: 'Georgia', fontSize: 12)),
                   selected: _cat == c,
                   onSelected: (_) => setState(() => _cat = c),
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('People Needing Help', style: TextStyle(fontFamily: 'Arial', fontSize: 13)),
+              const Text('Casualty / Survivor Count', style: TextStyle(fontFamily: 'Georgia', fontSize: 14)),
               Row(
                 children: [
                   IconButton.outlined(
@@ -482,8 +524,8 @@ class _SosSheetState extends State<_SosSheet> {
                     icon: const Icon(Icons.remove, size: 16),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('$_headcount', style: const TextStyle(fontFamily: 'Arial', fontSize: 16, fontWeight: FontWeight.bold)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('$_headcount', style: const TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
                   IconButton.outlined(
                     onPressed: () => setState(() => _headcount++),
@@ -493,31 +535,31 @@ class _SosSheetState extends State<_SosSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           TextField(
             controller: _text,
             maxLength: kMaxTextLength,
             maxLines: 2,
-            style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+            style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
             decoration: const InputDecoration(
-              labelText: 'Details / Location info (optional)',
+              labelText: 'Details / Landmark info (optional)',
               alignLabelWithHint: true,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 50,
             child: FilledButton(
               onPressed: () => Navigator.pop(
                 context,
                 _SosRequest(_cat, _headcount, _text.text.trim()),
               ),
               style: FilledButton.styleFrom(
-                backgroundColor: MeshTheme.emergencyRed,
+                backgroundColor: MeshTheme.terracottaRed,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('BROADCAST SOS', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 14)),
+              child: const Text('BROADCAST DISTRESS SIGNAL', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14)),
             ),
           ),
         ],

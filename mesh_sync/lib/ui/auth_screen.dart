@@ -53,36 +53,38 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand
-                    const Text(
-                      'MESHSYNC',
+                    // Oversized Serif Brand Title
+                    Text(
+                      'MeshSync',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Arial',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                        fontFamily: 'Georgia',
+                        fontSize: 34,
+                        fontWeight: FontWeight.normal,
+                        letterSpacing: -0.5,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       'Decentralized Offline Emergency Network',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Arial',
-                        fontSize: 12,
-                        color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
+                        fontFamily: 'Georgia',
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 36),
 
                     // Role Selector
                     Container(
@@ -96,8 +98,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         children: [
                           Expanded(
                             child: _RoleTabButton(
-                              label: 'Citizen / Victim',
-                              icon: Icons.person,
+                              label: 'Citizen',
+                              icon: Icons.person_outline,
                               selected: _selectedRole == MeshRole.victim,
                               onTap: () => setState(() => _selectedRole = MeshRole.victim),
                             ),
@@ -106,7 +108,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           Expanded(
                             child: _RoleTabButton(
                               label: 'Search & Rescue',
-                              icon: Icons.medical_services,
+                              icon: Icons.medical_services_outlined,
                               selected: _selectedRole == MeshRole.responder,
                               onTap: () => setState(() => _selectedRole = MeshRole.responder),
                             ),
@@ -114,35 +116,37 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Role Notice
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: theme.cardTheme.color,
-                        border: Border.all(
-                          color: _selectedRole == MeshRole.victim
-                              ? MeshTheme.emergencyRed
-                              : theme.dividerColor,
+                        border: Border(
+                          left: BorderSide(
+                            color: _selectedRole == MeshRole.victim
+                                ? MeshTheme.terracottaRed
+                                : MeshTheme.sageGreen,
+                            width: 3,
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         _selectedRole == MeshRole.victim
-                            ? 'CITIZEN PORTAL: Send emergency SOS distress signals and notify rescuers when you are safe.'
-                            : 'RESPONDER PORTAL: Receive live victim distress packets, casualty counts, and coordinate rescue triage.',
+                            ? 'Citizen portal: Broadcast emergency distress signals and confirm your safety with search teams.'
+                            : 'Responder portal: Receive inbound victim signals, casualty counts, and coordinate rescue triage.',
                         style: TextStyle(
-                          fontFamily: 'Arial',
-                          fontSize: 11,
-                          height: 1.3,
+                          fontFamily: 'Georgia',
+                          fontSize: 12,
+                          height: 1.4,
                           color: isDark ? MeshTheme.darkText : MeshTheme.lightText,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 28),
 
-                    // Auth Type Toggle (Login vs Sign Up)
+                    // Auth Mode Switcher (Sign In vs Sign Up)
                     Row(
                       children: [
                         Expanded(
@@ -162,10 +166,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                 'Sign In',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontFamily: 'Arial',
+                                  fontFamily: 'Georgia',
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: !_isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim),
+                                  fontSize: 14,
+                                  color: !_isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                                 ),
                               ),
                             ),
@@ -185,13 +189,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               ),
                               child: Text(
-                                'Create Account',
+                                'Register',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontFamily: 'Arial',
+                                  fontFamily: 'Georgia',
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: _isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim),
+                                  fontSize: 14,
+                                  color: _isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                                 ),
                               ),
                             ),
@@ -199,45 +203,45 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    // Fields
+                    // Form Fields
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
                       decoration: const InputDecoration(
                         labelText: 'Full Name',
                         prefixIcon: Icon(Icons.person_outline, size: 18),
                       ),
                       validator: (val) => val == null || val.isEmpty ? 'Name required' : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     if (_selectedRole == MeshRole.victim) ...[
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
                         decoration: const InputDecoration(
                           labelText: 'Mobile Number / Emergency ID',
                           prefixIcon: Icon(Icons.phone_outlined, size: 18),
                         ),
-                        validator: (val) => val == null || val.isEmpty ? 'Phone number required' : null,
+                        validator: (val) => val == null || val.isEmpty ? 'Identifier required' : null,
                       ),
                     ] else ...[
                       TextFormField(
                         controller: _badgeController,
-                        style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
                         decoration: const InputDecoration(
                           labelText: 'Responder Badge / Official ID',
                           prefixIcon: Icon(Icons.badge_outlined, size: 18),
                         ),
                         validator: (val) => val == null || val.isEmpty ? 'Badge ID required' : null,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _unitController,
-                        style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
                         decoration: const InputDecoration(
                           labelText: 'SAR Unit / Squad Code (e.g. SAR-ALPHA)',
                           prefixIcon: Icon(Icons.shield_outlined, size: 18),
@@ -246,11 +250,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _pinController,
                       obscureText: true,
-                      style: const TextStyle(fontFamily: 'Arial', fontSize: 13),
+                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
                       decoration: const InputDecoration(
                         labelText: 'Security PIN / Password',
                         prefixIcon: Icon(Icons.lock_outline, size: 18),
@@ -258,27 +262,28 @@ class _AuthScreenState extends State<AuthScreen> {
                       validator: (val) => val == null || val.length < 4 ? 'Min 4 characters required' : null,
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 28),
+                    // Strong Primary Action Button
                     FilledButton(
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
                         backgroundColor: _selectedRole == MeshRole.victim
-                            ? MeshTheme.emergencyRed
-                            : theme.colorScheme.primary,
+                            ? MeshTheme.terracottaRed
+                            : theme.colorScheme.onSurface,
                         foregroundColor: _selectedRole == MeshRole.victim
                             ? Colors.white
-                            : theme.colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                            : theme.scaffoldBackgroundColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: Text(
                         _isSignUp
-                            ? (_selectedRole == MeshRole.victim ? 'REGISTER AS CITIZEN' : 'REGISTER AS RESPONDER')
-                            : (_selectedRole == MeshRole.victim ? 'SIGN IN AS CITIZEN' : 'SIGN IN AS SAR RESPONDER'),
+                            ? (_selectedRole == MeshRole.victim ? 'Register Citizen Profile' : 'Register SAR Profile')
+                            : (_selectedRole == MeshRole.victim ? 'Access Citizen Portal' : 'Access Responder Command'),
                         style: const TextStyle(
-                          fontFamily: 'Arial',
-                          fontSize: 13,
+                          fontFamily: 'Georgia',
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
@@ -328,18 +333,18 @@ class _RoleTabButton extends StatelessWidget {
               size: 16,
               color: selected
                   ? (isDark ? Colors.black : Colors.white)
-                  : (isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim),
+                  : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Arial',
-                fontSize: 11,
+                fontFamily: 'Georgia',
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: selected
                     ? (isDark ? Colors.black : Colors.white)
-                    : (isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim),
+                    : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
               ),
             ),
           ],

@@ -140,20 +140,21 @@ class _MeshHomePageState extends State<MeshHomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isResponder ? 'SAR RESPONDER PORTAL' : 'CITIZEN SOS PORTAL',
+              isResponder ? 'SAR Command Portal' : 'Citizen Emergency Portal',
               style: TextStyle(
-                fontFamily: 'Arial',
-                fontSize: 14,
+                fontFamily: 'Georgia',
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isResponder ? theme.colorScheme.onSurface : MeshTheme.emergencyRed,
+                color: isResponder ? theme.colorScheme.onSurface : MeshTheme.terracottaRed,
               ),
             ),
             Text(
               '${widget.userName.isNotEmpty ? widget.userName : "User"} · ${widget.userIdentifier}',
               style: TextStyle(
-                fontFamily: 'Arial',
+                fontFamily: 'Georgia',
                 fontSize: 11,
-                color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
+                fontStyle: FontStyle.italic,
+                color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
               ),
             ),
           ],
@@ -165,7 +166,7 @@ class _MeshHomePageState extends State<MeshHomePage> {
               isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
               size: 20,
             ),
-            tooltip: isDark ? 'Light Mode' : 'Dark Mode',
+            tooltip: isDark ? 'Switch to Linen Light' : 'Switch to Obsidian Dark',
             onPressed: () {
               themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
             },
@@ -177,11 +178,11 @@ class _MeshHomePageState extends State<MeshHomePage> {
               final peers = service.peers.length;
               return OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   visualDensity: VisualDensity.compact,
                 ),
                 onPressed: _showPeersSheet,
-                child: Text('$peers Peer${peers == 1 ? '' : 's'}', style: const TextStyle(fontFamily: 'Arial', fontSize: 11)),
+                child: Text('$peers Peer${peers == 1 ? '' : 's'}', style: const TextStyle(fontFamily: 'Georgia', fontSize: 11)),
               );
             },
           ),
@@ -221,22 +222,23 @@ class _MinimalistStatusBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final service = app.service;
     final peers = service.peers.length;
     final isRunning = service.isRunning;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       color: theme.scaffoldBackgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Radio Status & Controls Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: theme.dividerColor),
             ),
             child: Row(
@@ -250,22 +252,22 @@ class _MinimalistStatusBar extends StatelessWidget {
                           Text(
                             service.nickname,
                             style: const TextStyle(
-                              fontFamily: 'Arial',
+                              fontFamily: 'Georgia',
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isRunning ? MeshTheme.safeGreen : theme.dividerColor,
+                              color: isRunning ? MeshTheme.sageGreen : theme.dividerColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               isRunning ? 'ONLINE' : 'OFFLINE',
                               style: const TextStyle(
-                                fontFamily: 'Arial',
+                                fontFamily: 'Georgia',
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -274,15 +276,15 @@ class _MinimalistStatusBar extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         isRunning
-                            ? 'Advertising & Discovering · $peers reachable peers'
-                            : 'Mesh radio stopped',
+                            ? 'Mesh radio active · $peers reachable peers'
+                            : 'Radio idle',
                         style: TextStyle(
-                          fontFamily: 'Arial',
-                          fontSize: 11,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontFamily: 'Georgia',
+                          fontSize: 12,
+                          color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                         ),
                       ),
                     ],
@@ -291,14 +293,14 @@ class _MinimalistStatusBar extends StatelessWidget {
                 FilledButton(
                   onPressed: isRunning ? service.stop : service.start,
                   style: FilledButton.styleFrom(
-                    backgroundColor: isRunning ? MeshTheme.emergencyRed : theme.colorScheme.primary,
-                    foregroundColor: isRunning ? Colors.white : theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    backgroundColor: isRunning ? MeshTheme.terracottaRed : theme.colorScheme.onSurface,
+                    foregroundColor: isRunning ? Colors.white : theme.scaffoldBackgroundColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     visualDensity: VisualDensity.compact,
                   ),
                   child: Text(
-                    isRunning ? 'Stop' : 'Start',
-                    style: const TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 12),
+                    isRunning ? 'Stop Radio' : 'Start Radio',
+                    style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ],
@@ -309,25 +311,25 @@ class _MinimalistStatusBar extends StatelessWidget {
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: MeshTheme.emergencyRed),
+                border: Border.all(color: MeshTheme.terracottaRed),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_off, color: MeshTheme.emergencyRed, size: 18),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.location_off_outlined, color: MeshTheme.terracottaRed, size: 18),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'GPS is off. Nearby requires location to connect.',
-                      style: TextStyle(fontFamily: 'Arial', fontSize: 11),
+                      'Location services off. Nearby Connections requires GPS to establish links.',
+                      style: TextStyle(fontFamily: 'Georgia', fontSize: 12),
                     ),
                   ),
                   TextButton(
                     onPressed: service.requestPermissions,
-                    child: const Text('Fix', style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, color: MeshTheme.emergencyRed)),
+                    child: const Text('Enable', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: MeshTheme.terracottaRed)),
                   ),
                 ],
               ),

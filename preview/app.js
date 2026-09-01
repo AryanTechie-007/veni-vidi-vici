@@ -1,4 +1,4 @@
-// MeshSync Minimalist Interactive Web Simulator State
+// MeshSync Cognitive Minimalism Interactive Web Simulator
 const state = {
   isLoggedIn: false,
   userName: '',
@@ -25,7 +25,7 @@ const state = {
       id: 'e4a8b29c11f09d31',
       cat: 'medical',
       n: 2,
-      txt: '2nd floor collapse near stairwell B, need splints',
+      txt: '2nd floor stairwell collapsed, need stretchers and splints',
       ts: Date.now() - 140000,
       acked: true
     }
@@ -37,7 +37,7 @@ const state = {
       origin: '8b7f12',
       cat: 'medical',
       n: 2,
-      txt: '2nd floor collapse near stairwell B, need splints',
+      txt: '2nd floor stairwell collapsed, need stretchers and splints',
       ts: Date.now() - 140000,
       hops: 0,
       acked: true
@@ -47,7 +47,7 @@ const state = {
       origin: '3a59d8',
       cat: 'trapped',
       n: 3,
-      txt: 'Elevator stalled between floors 3 & 4.',
+      txt: 'Elevator stalled between floors 3 & 4. Smoke rising.',
       ts: Date.now() - 320000,
       hops: 2,
       acked: false
@@ -78,14 +78,15 @@ function selectAuthRole(role) {
   const submitBtn = document.getElementById('authSubmitBtn');
 
   if (role === 'victim') {
-    notice.textContent = 'CITIZEN PORTAL: Send emergency SOS distress signals and notify rescuers when you are safe.';
-    notice.style.borderLeftColor = 'var(--sos-red)';
-    submitBtn.textContent = state.isSignUp ? 'REGISTER AS CITIZEN' : 'SIGN IN AS CITIZEN';
-    submitBtn.style.backgroundColor = 'var(--sos-red)';
+    notice.textContent = 'Citizen portal: Broadcast emergency distress signals and confirm your safety with search teams.';
+    notice.style.borderLeftColor = 'var(--terracotta)';
+    submitBtn.textContent = state.isSignUp ? 'Register Citizen Profile' : 'Access Citizen Portal';
+    submitBtn.style.backgroundColor = 'var(--terracotta)';
+    submitBtn.style.color = '#ffffff';
   } else {
-    notice.textContent = 'RESPONDER PORTAL: Receive live victim distress packets, casualty counts, and coordinate rescue triage.';
-    notice.style.borderLeftColor = 'var(--text-color)';
-    submitBtn.textContent = state.isSignUp ? 'REGISTER AS RESPONDER' : 'SIGN IN AS SAR RESPONDER';
+    notice.textContent = 'Responder portal: Receive inbound victim signals, casualty counts, and coordinate rescue triage.';
+    notice.style.borderLeftColor = 'var(--sage)';
+    submitBtn.textContent = state.isSignUp ? 'Register SAR Profile' : 'Access Responder Command';
     submitBtn.style.backgroundColor = 'var(--text-color)';
     submitBtn.style.color = 'var(--bg-color)';
   }
@@ -99,9 +100,9 @@ function setAuthMode(isSignUp) {
   const role = state.authSelectedRole;
   const submitBtn = document.getElementById('authSubmitBtn');
   if (isSignUp) {
-    submitBtn.textContent = role === 'victim' ? 'REGISTER AS CITIZEN' : 'REGISTER AS RESPONDER';
+    submitBtn.textContent = role === 'victim' ? 'Register Citizen Profile' : 'Register SAR Profile';
   } else {
-    submitBtn.textContent = role === 'victim' ? 'SIGN IN AS CITIZEN' : 'SIGN IN AS SAR RESPONDER';
+    submitBtn.textContent = role === 'victim' ? 'Access Citizen Portal' : 'Access Responder Command';
   }
 }
 
@@ -124,7 +125,7 @@ function loginUser(role, name, id) {
   state.nickname = (role === 'responder' ? 'R|SAR-' : 'C|dev-') + 'K7P2';
 
   renderAuthState();
-  showToast(`Signed in as ${role === 'responder' ? 'Search & Rescue Responder' : 'Citizen'}`);
+  showToast(`Signed in as ${role === 'responder' ? 'SAR Responder' : 'Citizen'}`);
 }
 
 function logoutUser() {
@@ -160,8 +161,8 @@ function renderAuthState() {
     const userSubtitle = document.getElementById('appUserProfileSubtitle');
 
     if (portalTitle) {
-      portalTitle.textContent = isResponder ? 'SAR RESPONDER PORTAL' : 'CITIZEN SOS PORTAL';
-      portalTitle.style.color = isResponder ? 'var(--text-color)' : 'var(--sos-red)';
+      portalTitle.textContent = isResponder ? 'SAR Command Portal' : 'Citizen Emergency Portal';
+      portalTitle.style.color = isResponder ? 'var(--text-color)' : 'var(--terracotta)';
     }
 
     if (userSubtitle) {
@@ -184,14 +185,14 @@ function renderAuthState() {
 function toggleTheme() {
   state.isLightMode = !state.isLightMode;
   document.body.classList.toggle('light-mode', state.isLightMode);
-  document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Dark' : 'Light';
-  showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
+  document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Obsidian Dark' : 'Linen Light';
+  showToast(`Switched to ${state.isLightMode ? 'Linen Light' : 'Obsidian Dark'} Theme`);
 }
 
 function toggleRadio() {
   state.radioRunning = !state.radioRunning;
   renderRadioStatus();
-  showToast(state.radioRunning ? 'Mesh radio started' : 'Mesh radio stopped');
+  showToast(state.radioRunning ? 'Mesh radio active' : 'Mesh radio stopped');
 }
 
 function toggleGps(enable) {
@@ -209,16 +210,16 @@ function renderRadioStatus() {
 
   if (state.radioRunning) {
     badge.textContent = 'ONLINE';
-    badge.style.backgroundColor = 'var(--safe-green)';
-    subtext.textContent = `Advertising & Discovering · ${state.peers.length} reachable peers`;
-    toggleBtn.textContent = 'Stop';
-    toggleBtn.style.backgroundColor = 'var(--sos-red)';
+    badge.style.backgroundColor = 'var(--sage)';
+    subtext.textContent = `Mesh radio active · ${state.peers.length} reachable peers`;
+    toggleBtn.textContent = 'Stop Radio';
+    toggleBtn.style.backgroundColor = 'var(--terracotta)';
     toggleBtn.style.color = '#ffffff';
   } else {
     badge.textContent = 'OFFLINE';
     badge.style.backgroundColor = 'var(--text-muted)';
-    subtext.textContent = 'Mesh radio stopped';
-    toggleBtn.textContent = 'Start';
+    subtext.textContent = 'Radio idle';
+    toggleBtn.textContent = 'Start Radio';
     toggleBtn.style.backgroundColor = 'var(--text-color)';
     toggleBtn.style.color = 'var(--bg-color)';
   }
@@ -284,7 +285,7 @@ function submitSos() {
 
   closeSosModal();
   renderAll();
-  showToast('Distress Signal Broadcasted!');
+  showToast('Distress Signal Dispatched!');
 }
 
 function markSafe(id) {
@@ -297,19 +298,19 @@ function markSafe(id) {
 function closeIncident(id) {
   state.incidents = state.incidents.filter(m => m.id !== id);
   state.myMessages = state.myMessages.filter(m => m.id !== id);
-  showToast('Incident closed and broadcasted as RESCUED.');
+  showToast('Incident resolved and closed.');
   renderAll();
 }
 
 function openPeersModal() {
   const container = document.getElementById('peersListContainer');
   container.innerHTML = state.peers.map(p => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--border-color); border-radius:6px; background-color:var(--surface-color);">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border:1px solid var(--border-color); border-radius:8px; background-color:var(--surface-color);">
       <div>
-        <div style="font-weight:bold; font-size:12px;">${p.name}</div>
-        <div style="font-size:10px; color:var(--text-muted);">Endpoint: ${p.endpointId}</div>
+        <div style="font-weight:600; font-size:13px;">${p.name}</div>
+        <div style="font-size:11px; color:var(--text-muted); font-style:italic;">Endpoint: ${p.endpointId}</div>
       </div>
-      <span style="font-size:9px; font-weight:bold; padding:2px 6px; border-radius:4px; background-color:var(--card-color); border:1px solid var(--border-color);">${p.isResponder ? 'RESPONDER' : 'CITIZEN'}</span>
+      <span style="font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; background-color:var(--card-color); border:1px solid var(--border-color);">${p.isResponder ? 'RESPONDER' : 'CITIZEN'}</span>
     </div>
   `).join('');
   document.getElementById('peersModal').style.display = 'flex';
@@ -338,8 +339,8 @@ function renderMyMessages() {
 
   if (state.myMessages.length === 0) {
     list.innerHTML = `
-      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:8px; padding:16px; text-align:center; font-size:12px; color:var(--text-muted);">
-        No active distress signals. Your device relays messages for others in the background without sharing personal data.
+      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:10px; padding:24px; text-align:center; font-size:13px; color:var(--text-muted); font-style:italic;">
+        No distress signals active. Your phone relays messages for others in the background.
       </div>
     `;
     return;
@@ -348,16 +349,16 @@ function renderMyMessages() {
   list.innerHTML = state.myMessages.map(m => `
     <div class="incident-card ${m.acked ? 'acked' : ''}">
       <div class="card-status-header ${m.acked ? 'acked' : ''}">
-        <span>${m.acked ? '● Responder Acknowledged' : `○ Relayed to ${state.peers.length} peers`}</span>
-        <span style="font-weight:normal; font-size:10px; color:var(--text-muted);">${formatElapsed(m.ts)}</span>
+        <span>${m.acked ? '● Responder Confirmed Receipt' : `○ Relayed across ${state.peers.length} peers`}</span>
+        <span style="font-weight:normal; font-size:11px; color:var(--text-muted);">${formatElapsed(m.ts)}</span>
       </div>
       <div class="card-body">
         <div class="card-title-row">
           <span>${m.cat.toUpperCase()}</span>
-          <span style="font-weight:normal; font-size:11px;">${m.n} ${m.n === 1 ? 'Person' : 'People'}</span>
+          <span style="font-weight:normal; font-size:12px; color:var(--text-muted);">${m.n} ${m.n === 1 ? 'Person' : 'People'}</span>
         </div>
         ${m.txt ? `<div class="card-details-box">${escapeHtml(m.txt)}</div>` : ''}
-        <button class="card-action-btn" onclick="markSafe('${m.id}')">I Am Safe</button>
+        <button class="card-action-btn" onclick="markSafe('${m.id}')">I Am Safe (Resolve)</button>
       </div>
     </div>
   `).join('');
@@ -392,7 +393,7 @@ function renderResponderView() {
 
   if (filtered.length === 0) {
     list.innerHTML = `
-      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:8px; padding:20px; text-align:center; font-size:12px; color:var(--text-muted);">
+      <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:10px; padding:28px; text-align:center; font-size:13px; color:var(--text-muted); font-style:italic;">
         No distress signals in range.
       </div>
     `;
@@ -403,15 +404,15 @@ function renderResponderView() {
     <div class="incident-card">
       <div class="card-status-header">
         <span>${i.cat.toUpperCase()}</span>
-        <span style="font-weight:normal; font-size:10px; color:var(--text-muted);">#${i.origin} · ${formatElapsed(i.ts)} · ${i.hops === 0 ? 'Direct' : `${i.hops} hops`}</span>
+        <span style="font-weight:normal; font-size:11px; color:var(--text-muted);">#${i.origin} · ${formatElapsed(i.ts)} · ${i.hops === 0 ? 'Direct link' : `${i.hops} hops away`}</span>
       </div>
       <div class="card-body">
         <div class="card-title-row">
-          <span>${i.n} ${i.n === 1 ? 'Person' : 'People'}</span>
-          ${i.acked ? '<span style="color:var(--safe-green); font-size:10px;">Auto-ACK</span>' : ''}
+          <span>${i.n} ${i.n === 1 ? 'Survivor' : 'Survivors'}</span>
+          ${i.acked ? '<span style="color:var(--sage); font-size:11px; font-weight:600;">Auto-ACK</span>' : ''}
         </div>
         ${i.txt ? `<div class="card-details-box">${escapeHtml(i.txt)}</div>` : ''}
-        <button class="card-action-btn" onclick="closeIncident('${i.id}')">Mark Rescued & Close</button>
+        <button class="card-action-btn" onclick="closeIncident('${i.id}')">Mark Rescued & Close Incident</button>
       </div>
     </div>
   `).join('');
@@ -429,7 +430,7 @@ function simReceiveInboundSos() {
     origin,
     cat,
     n,
-    txt: `Distress signal from survivor #${origin}`,
+    txt: `Emergency beacon from survivor #${origin}`,
     ts: Date.now(),
     hops: Math.floor(Math.random() * 2),
     acked: false
@@ -442,7 +443,7 @@ function simReceiveInboundSos() {
 function simReceiveResponderAck() {
   if (state.myMessages.length === 0) return;
   state.myMessages[0].acked = true;
-  showToast('Responder confirmed your SOS!');
+  showToast('Search & Rescue responder confirmed your SOS!');
   renderAll();
 }
 

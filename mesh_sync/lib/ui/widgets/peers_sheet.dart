@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../mesh_app.dart';
+import '../theme/mesh_theme.dart';
 
 /// Modal bottom sheet displaying active mesh peer nodes in direct radio range.
 class PeersSheet extends StatelessWidget {
@@ -10,10 +11,11 @@ class PeersSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final peers = app.service.peers;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,36 +27,36 @@ class PeersSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Connected Mesh Nodes',
-                    style: TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 16),
+                    'Direct Radio Peers',
+                    style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${peers.length} reachable devices in direct radio range',
-                    style: TextStyle(fontFamily: 'Arial', fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                    '${peers.length} active node${peers.length == 1 ? '' : 's'} in peer cluster',
+                    style: TextStyle(fontFamily: 'Georgia', fontSize: 12, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                   ),
                 ],
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(Icons.close, size: 20),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           if (peers.isEmpty)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: theme.dividerColor),
               ),
-              child: const Text(
-                'No peer devices currently in direct range. Searching...',
+              child: Text(
+                'No peer devices currently in direct radio range. Searching nearby frequencies...',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Arial', fontSize: 12),
+                style: TextStyle(fontFamily: 'Georgia', fontSize: 13, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
               ),
             )
           else
@@ -62,15 +64,15 @@ class PeersSheet extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: peers.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                separatorBuilder: (context, index) => const SizedBox(height: 10),
                 itemBuilder: (context, i) {
                   final peer = peers[i];
                   final isResponder = peer.name.startsWith('R|');
                   return Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: theme.cardTheme.color,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: Row(
@@ -81,27 +83,28 @@ class PeersSheet extends StatelessWidget {
                           children: [
                             Text(
                               peer.name,
-                              style: const TextStyle(fontFamily: 'Arial', fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              'Endpoint: ${peer.endpointId}',
-                              style: TextStyle(fontFamily: 'Arial', fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                              'Endpoint ID: ${peer.endpointId}',
+                              style: TextStyle(fontFamily: 'Georgia', fontSize: 11, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                             ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isResponder ? Colors.red.withValues(alpha: 0.1) : theme.dividerColor,
+                            color: isResponder ? MeshTheme.terracottaRed.withValues(alpha: 0.15) : theme.dividerColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isResponder ? 'RESPONDER' : 'CITIZEN',
                             style: TextStyle(
-                              fontFamily: 'Arial',
-                              fontSize: 9,
+                              fontFamily: 'Georgia',
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: isResponder ? Colors.red : theme.colorScheme.onSurface,
+                              color: isResponder ? MeshTheme.terracottaRed : theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -111,7 +114,7 @@ class PeersSheet extends StatelessWidget {
                 },
               ),
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
         ],
       ),
     );
