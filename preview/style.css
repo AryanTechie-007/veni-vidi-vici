@@ -59,11 +59,147 @@ body {
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+/* AUTH SCREEN */
+.auth-container {
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.brand-title-large {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+}
+
+.brand-subtitle-large {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.auth-role-tabs {
+  display: flex;
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.auth-role-btn {
+  flex: 1;
+  padding: 9px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.auth-role-btn.active {
+  background-color: var(--text-color);
+  color: var(--bg-color);
+}
+
+.auth-role-notice {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--sos-red);
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.auth-mode-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-mode-tab {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.auth-mode-tab.active {
+  color: var(--text-color);
+  border-bottom-color: var(--text-color);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-label {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.form-group input {
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: var(--text-color);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: var(--text-color);
+}
+
+.auth-submit-btn {
+  background-color: var(--sos-red);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-top: 6px;
 }
 
 /* Header */
 .app-header {
-  padding: 14px 16px;
+  padding: 12px 14px;
   background-color: var(--surface-color);
   display: flex;
   justify-content: space-between;
@@ -71,14 +207,8 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.brand-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .brand-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: bold;
   letter-spacing: 0.5px;
 }
@@ -86,27 +216,33 @@ body {
 .brand-subtitle {
   font-size: 10px;
   color: var(--text-muted);
+  margin-top: 1px;
 }
 
 .header-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
-.theme-toggle-btn, .peers-chip {
+.theme-toggle-btn, .peers-chip, .logout-btn {
   background: var(--card-color);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.logout-btn {
+  color: var(--sos-red);
+  border-color: rgba(211, 47, 47, 0.4);
 }
 
 /* Content Area */
@@ -119,40 +255,12 @@ body {
 
 /* Tactical Status Bar */
 .tactical-status-bar {
-  padding: 12px 16px;
+  padding: 10px 14px;
   background-color: var(--surface-color);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-/* Role Segmented Switch */
-.role-segmented-control {
-  display: flex;
-  background-color: var(--card-color);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.role-segment {
-  flex: 1;
-  padding: 7px;
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.role-segment.active {
-  background-color: var(--text-color);
-  color: var(--bg-color);
+  gap: 8px;
 }
 
 /* Radio Status Card */
@@ -160,7 +268,7 @@ body {
   background-color: var(--card-color);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -191,10 +299,10 @@ body {
   background-color: var(--sos-red);
   color: #fff;
   border: none;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 6px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -203,7 +311,7 @@ body {
 .gps-warning-card {
   border: 1px solid var(--sos-red);
   background-color: var(--card-color);
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 6px;
   font-size: 11px;
   display: flex;
@@ -503,12 +611,6 @@ body {
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
-}
-
-.sim-btn.red {
-  background-color: var(--sos-red);
-  color: #fff;
-  border-color: var(--sos-red);
 }
 
 .panel-footer {

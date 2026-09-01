@@ -1,6 +1,12 @@
 // MeshSync Minimalist Interactive Web Simulator State
 const state = {
+  isLoggedIn: false,
+  userName: '',
+  userIdentifier: '',
   role: 'victim', // 'victim' or 'responder'
+  authSelectedRole: 'victim',
+  isSignUp: false,
+
   radioRunning: true,
   gpsEnabled: true,
   isLightMode: false,
@@ -52,11 +58,127 @@ const state = {
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   setupEvents();
-  renderAll();
+  renderAuthState();
 });
 
 function setupEvents() {
   document.getElementById('openPeersBtn')?.addEventListener('click', openPeersModal);
+}
+
+// Auth Logic
+function selectAuthRole(role) {
+  state.authSelectedRole = role;
+  document.getElementById('authRoleCitizenBtn').classList.toggle('active', role === 'victim');
+  document.getElementById('authRoleSarBtn').classList.toggle('active', role === 'responder');
+
+  document.getElementById('citizenFields').style.display = role === 'victim' ? 'block' : 'none';
+  document.getElementById('responderFields').style.display = role === 'responder' ? 'block' : 'none';
+
+  const notice = document.getElementById('authRoleNotice');
+  const submitBtn = document.getElementById('authSubmitBtn');
+
+  if (role === 'victim') {
+    notice.textContent = 'CITIZEN PORTAL: Send emergency SOS distress signals and notify rescuers when you are safe.';
+    notice.style.borderLeftColor = 'var(--sos-red)';
+    submitBtn.textContent = state.isSignUp ? 'REGISTER AS CITIZEN' : 'SIGN IN AS CITIZEN';
+    submitBtn.style.backgroundColor = 'var(--sos-red)';
+  } else {
+    notice.textContent = 'RESPONDER PORTAL: Receive live victim distress packets, casualty counts, and coordinate rescue triage.';
+    notice.style.borderLeftColor = 'var(--text-color)';
+    submitBtn.textContent = state.isSignUp ? 'REGISTER AS RESPONDER' : 'SIGN IN AS SAR RESPONDER';
+    submitBtn.style.backgroundColor = 'var(--text-color)';
+    submitBtn.style.color = 'var(--bg-color)';
+  }
+}
+
+function setAuthMode(isSignUp) {
+  state.isSignUp = isSignUp;
+  document.getElementById('authModeSignIn').classList.toggle('active', !isSignUp);
+  document.getElementById('authModeSignUp').classList.toggle('active', isSignUp);
+
+  const role = state.authSelectedRole;
+  const submitBtn = document.getElementById('authSubmitBtn');
+  if (isSignUp) {
+    submitBtn.textContent = role === 'victim' ? 'REGISTER AS CITIZEN' : 'REGISTER AS RESPONDER';
+  } else {
+    submitBtn.textContent = role === 'victim' ? 'SIGN IN AS CITIZEN' : 'SIGN IN AS SAR RESPONDER';
+  }
+}
+
+function handleAuthSubmit(event) {
+  event.preventDefault();
+  const name = document.getElementById('authNameInput').value.trim();
+  const role = state.authSelectedRole;
+  const id = role === 'responder'
+    ? (document.getElementById('authBadgeInput').value.trim() || 'SAR-8821')
+    : (document.getElementById('authPhoneInput').value.trim() || '+91 98765 43210');
+
+  loginUser(role, name, id);
+}
+
+function loginUser(role, name, id) {
+  state.isLoggedIn = true;
+  state.role = role;
+  state.userName = name;
+  state.userIdentifier = id;
+  state.nickname = (role === 'responder' ? 'R|SAR-' : 'C|dev-') + 'K7P2';
+
+  renderAuthState();
+  showToast(`Signed in as ${role === 'responder' ? 'Search & Rescue Responder' : 'Citizen'}`);
+}
+
+function logoutUser() {
+  state.isLoggedIn = false;
+  state.userName = '';
+  state.userIdentifier = '';
+  renderAuthState();
+  showToast('Signed out.');
+}
+
+function quickLoginCitizen() {
+  loginUser('victim', 'Aryan Sinha', '+91 98765 43210');
+}
+
+function quickLoginResponder() {
+  loginUser('responder', 'Commander Aryan', 'SAR-8821 (Alpha Squad)');
+}
+
+function renderAuthState() {
+  const authScreen = document.getElementById('authScreen');
+  const mainAppScreen = document.getElementById('mainAppScreen');
+
+  if (!state.isLoggedIn) {
+    authScreen.style.display = 'flex';
+    mainAppScreen.style.display = 'none';
+  } else {
+    authScreen.style.display = 'none';
+    mainAppScreen.style.display = 'flex';
+
+    // Update Header
+    const isResponder = state.role === 'responder';
+    const portalTitle = document.getElementById('appPortalTitle');
+    const userSubtitle = document.getElementById('appUserProfileSubtitle');
+
+    if (portalTitle) {
+      portalTitle.textContent = isResponder ? 'SAR RESPONDER PORTAL' : 'CITIZEN SOS PORTAL';
+      portalTitle.style.color = isResponder ? 'var(--text-color)' : 'var(--sos-red)';
+    }
+
+    if (userSubtitle) {
+      userSubtitle.textContent = `${state.userName} · ${state.userIdentifier}`;
+    }
+
+    // Role-Gated View Display
+    if (isResponder) {
+      document.getElementById('victimView').style.display = 'none';
+      document.getElementById('responderView').style.display = 'flex';
+    } else {
+      document.getElementById('victimView').style.display = 'flex';
+      document.getElementById('responderView').style.display = 'none';
+    }
+
+    renderAll();
+  }
 }
 
 function toggleTheme() {
@@ -64,25 +186,6 @@ function toggleTheme() {
   document.body.classList.toggle('light-mode', state.isLightMode);
   document.getElementById('themeToggleBtn').textContent = state.isLightMode ? 'Dark' : 'Light';
   showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
-}
-
-function setRole(role) {
-  state.role = role;
-  state.nickname = (role === 'responder' ? 'R|SAR-' : 'C|dev-') + 'K7P2';
-  document.getElementById('roleVictimBtn').classList.toggle('active', role === 'victim');
-  document.getElementById('roleResponderBtn').classList.toggle('active', role === 'responder');
-  document.getElementById('nodeNickname').textContent = state.nickname;
-
-  if (role === 'victim') {
-    document.getElementById('victimView').style.display = 'flex';
-    document.getElementById('responderView').style.display = 'none';
-  } else {
-    document.getElementById('victimView').style.display = 'none';
-    document.getElementById('responderView').style.display = 'flex';
-  }
-
-  showToast(`Role: ${role === 'responder' ? 'Search & Rescue' : 'Victim / Citizen'}`);
-  renderAll();
 }
 
 function toggleRadio() {
@@ -100,17 +203,21 @@ function renderRadioStatus() {
   const badge = document.getElementById('radioStateBadge');
   const subtext = document.getElementById('radioSubtext');
   const toggleBtn = document.getElementById('radioToggleBtn');
+  const nodeNick = document.getElementById('nodeNickname');
+
+  if (nodeNick) nodeNick.textContent = state.nickname;
 
   if (state.radioRunning) {
     badge.textContent = 'ONLINE';
     badge.style.backgroundColor = 'var(--safe-green)';
-    subtext.textContent = `Advertising & Discovering · ${state.peers.length} in range`;
+    subtext.textContent = `Advertising & Discovering · ${state.peers.length} reachable peers`;
     toggleBtn.textContent = 'Stop';
     toggleBtn.style.backgroundColor = 'var(--sos-red)';
+    toggleBtn.style.color = '#ffffff';
   } else {
     badge.textContent = 'OFFLINE';
     badge.style.backgroundColor = 'var(--text-muted)';
-    subtext.textContent = 'Radio idle';
+    subtext.textContent = 'Mesh radio stopped';
     toggleBtn.textContent = 'Start';
     toggleBtn.style.backgroundColor = 'var(--text-color)';
     toggleBtn.style.color = 'var(--bg-color)';
@@ -120,8 +227,13 @@ function renderRadioStatus() {
   if (peersBtn) peersBtn.textContent = `${state.peers.length} Peer${state.peers.length === 1 ? '' : 's'}`;
 }
 
-// Modal
+// Modal (Citizen only)
 function openSosModal(preselectCat = 'medical') {
+  if (state.role === 'responder') {
+    showToast('Search & Rescue responders cannot broadcast personal SOS signals.');
+    return;
+  }
+
   state.selectedModalCat = preselectCat;
   state.modalHeadcount = 1;
   document.getElementById('modalHeadcount').textContent = '1';
@@ -185,7 +297,7 @@ function markSafe(id) {
 function closeIncident(id) {
   state.incidents = state.incidents.filter(m => m.id !== id);
   state.myMessages = state.myMessages.filter(m => m.id !== id);
-  showToast('Incident closed.');
+  showToast('Incident closed and broadcasted as RESCUED.');
   renderAll();
 }
 
@@ -210,19 +322,24 @@ function closePeersModal() {
 // Render
 function renderAll() {
   renderRadioStatus();
-  renderMyMessages();
-  renderResponderView();
+  if (state.role === 'victim') {
+    renderMyMessages();
+  } else {
+    renderResponderView();
+  }
 }
 
 function renderMyMessages() {
   const list = document.getElementById('myMessagesList');
   const countBadge = document.getElementById('myActiveCount');
+  if (!list || !countBadge) return;
+
   countBadge.textContent = `${state.myMessages.length} active`;
 
   if (state.myMessages.length === 0) {
     list.innerHTML = `
       <div style="background-color:var(--card-color); border:1px solid var(--border-color); border-radius:8px; padding:16px; text-align:center; font-size:12px; color:var(--text-muted);">
-        No active signals. Your phone relays messages for others in the mesh.
+        No active distress signals. Your device relays messages for others in the background without sharing personal data.
       </div>
     `;
     return;
@@ -255,6 +372,9 @@ function setResponderFilter(cat) {
 }
 
 function renderResponderView() {
+  const list = document.getElementById('responderIncidentsList');
+  if (!list) return;
+
   const filtered = state.responderFilter === 'ALL'
     ? state.incidents
     : state.incidents.filter(i => i.cat.toUpperCase() === state.responderFilter);
@@ -262,11 +382,13 @@ function renderResponderView() {
   const totalPeople = state.incidents.reduce((sum, i) => sum + (i.n || 1), 0);
   const ackedCount = state.incidents.filter(i => i.acked).length;
 
-  document.getElementById('metricActiveSos').textContent = state.incidents.length;
-  document.getElementById('metricPeopleAtRisk').textContent = totalPeople;
-  document.getElementById('metricAckConfirmed').textContent = ackedCount;
+  const mActive = document.getElementById('metricActiveSos');
+  const mPeople = document.getElementById('metricPeopleAtRisk');
+  const mAck = document.getElementById('metricAckConfirmed');
 
-  const list = document.getElementById('responderIncidentsList');
+  if (mActive) mActive.textContent = state.incidents.length;
+  if (mPeople) mPeople.textContent = totalPeople;
+  if (mAck) mAck.textContent = ackedCount;
 
   if (filtered.length === 0) {
     list.innerHTML = `
@@ -307,13 +429,13 @@ function simReceiveInboundSos() {
     origin,
     cat,
     n,
-    txt: `Distress signal from #${origin}`,
+    txt: `Distress signal from survivor #${origin}`,
     ts: Date.now(),
     hops: Math.floor(Math.random() * 2),
     acked: false
   });
 
-  showToast(`Inbound SOS from #${origin}`);
+  showToast(`Inbound SOS packet received from #${origin}`);
   renderAll();
 }
 

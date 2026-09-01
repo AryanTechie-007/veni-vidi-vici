@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import 'device_identity.dart';
 import 'mesh_app.dart';
+import 'ui/auth_screen.dart';
 import 'ui/responder_screen.dart';
 import 'ui/theme/mesh_theme.dart';
 import 'ui/victim_screen.dart';
@@ -37,17 +38,73 @@ class MeshSyncApp extends StatelessWidget {
           theme: MeshTheme.lightTheme,
           darkTheme: MeshTheme.darkTheme,
           themeMode: currentMode,
-          home: MeshHomePage(app: app),
+          home: MeshRootController(app: app),
         );
       },
     );
   }
 }
 
-class MeshHomePage extends StatefulWidget {
-  const MeshHomePage({super.key, required this.app});
+class MeshRootController extends StatefulWidget {
+  const MeshRootController({super.key, required this.app});
 
   final MeshApp app;
+
+  @override
+  State<MeshRootController> createState() => _MeshRootControllerState();
+}
+
+class _MeshRootControllerState extends State<MeshRootController> {
+  bool _isAuthenticated = false;
+  String _userName = '';
+  String _userIdentifier = '';
+
+  MeshApp get _app => widget.app;
+
+  void _onLogin(MeshRole role, String name, String id) async {
+    await _app.setRole(role);
+    setState(() {
+      _userName = name;
+      _userIdentifier = id;
+      _isAuthenticated = true;
+    });
+  }
+
+  void _onLogout() {
+    setState(() {
+      _isAuthenticated = false;
+      _userName = '';
+      _userIdentifier = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isAuthenticated) {
+      return AuthScreen(onAuthenticated: _onLogin);
+    }
+    return MeshHomePage(
+      app: _app,
+      userName: _userName,
+      userIdentifier: _userIdentifier,
+      onLogout: _onLogout,
+    );
+  }
+}
+
+class MeshHomePage extends StatefulWidget {
+  const MeshHomePage({
+    super.key,
+    required this.app,
+    required this.userName,
+    required this.userIdentifier,
+    required this.onLogout,
+  });
+
+  final MeshApp app;
+  final String userName;
+  final String userIdentifier;
+  final VoidCallback onLogout;
 
   @override
   State<MeshHomePage> createState() => _MeshHomePageState();
@@ -74,72 +131,77 @@ class _MeshHomePageState extends State<MeshHomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isResponder = _app.role == MeshRole.responder;
     final service = _app.service;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'MESHSYNC',
+              isResponder ? 'SAR RESPONDER PORTAL' : 'CITIZEN SOS PORTAL',
               style: TextStyle(
                 fontFamily: 'Arial',
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
+                color: isResponder ? theme.colorScheme.onSurface : MeshTheme.emergencyRed,
               ),
             ),
             Text(
-              'Offline Emergency Relay',
+              '${widget.userName.isNotEmpty ? widget.userName : "User"} · ${widget.userIdentifier}',
               style: TextStyle(
                 fontFamily: 'Arial',
                 fontSize: 11,
-                fontWeight: FontWeight.normal,
+                color: isDark ? MeshTheme.darkTextDim : MeshTheme.lightTextDim,
               ),
             ),
           ],
         ),
         actions: [
-          // Dark / Light Mode Toggle Button
+          // Theme Toggle Button
           IconButton(
             icon: Icon(
               isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
               size: 20,
             ),
-            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            tooltip: isDark ? 'Light Mode' : 'Dark Mode',
             onPressed: () {
               themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
             },
           ),
-          // Peers Button
+          // Peers Pill
           ListenableBuilder(
             listenable: service,
             builder: (context, _) {
               final peers = service.peers.length;
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  onPressed: _showPeersSheet,
-                  child: Text('$peers Peer${peers == 1 ? '' : 's'}'),
+              return OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  visualDensity: VisualDensity.compact,
                 ),
+                onPressed: _showPeersSheet,
+                child: Text('$peers Peer${peers == 1 ? '' : 's'}', style: const TextStyle(fontFamily: 'Arial', fontSize: 11)),
               );
             },
           ),
+          // Logout Button
+          IconButton(
+            icon: const Icon(Icons.logout, size: 18),
+            tooltip: 'Sign Out',
+            onPressed: widget.onLogout,
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: ListenableBuilder(
         listenable: Listenable.merge([_app, _app.service]),
         builder: (context, _) => Column(
           children: [
-            _MinimalistStatusBar(app: _app),
+            _MinimalistStatusBar(app: _app, isResponder: isResponder),
             const Divider(height: 1),
             Expanded(
-              child: _app.role == MeshRole.responder
+              child: isResponder
                   ? ResponderScreen(app: _app)
                   : VictimScreen(app: _app),
             ),
@@ -151,9 +213,10 @@ class _MeshHomePageState extends State<MeshHomePage> {
 }
 
 class _MinimalistStatusBar extends StatelessWidget {
-  const _MinimalistStatusBar({required this.app});
+  const _MinimalistStatusBar({required this.app, required this.isResponder});
 
   final MeshApp app;
+  final bool isResponder;
 
   @override
   Widget build(BuildContext context) {
@@ -168,25 +231,6 @@ class _MinimalistStatusBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Minimalist Role Switcher
-          SegmentedButton<MeshRole>(
-            segments: const [
-              ButtonSegment(
-                value: MeshRole.victim,
-                label: Text('Victim / Citizen'),
-                icon: Icon(Icons.person, size: 16),
-              ),
-              ButtonSegment(
-                value: MeshRole.responder,
-                label: Text('Search & Rescue'),
-                icon: Icon(Icons.medical_services, size: 16),
-              ),
-            ],
-            selected: {app.role},
-            onSelectionChanged: (selection) => app.setRole(selection.first),
-          ),
-          const SizedBox(height: 10),
-
           // Radio Status & Controls Card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -233,8 +277,8 @@ class _MinimalistStatusBar extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         isRunning
-                            ? 'Advertising & Discovering · $peers in range'
-                            : 'Radio idle',
+                            ? 'Advertising & Discovering · $peers reachable peers'
+                            : 'Mesh radio stopped',
                         style: TextStyle(
                           fontFamily: 'Arial',
                           fontSize: 11,

@@ -10,117 +10,172 @@
   <div class="app-layout">
     <!-- Phone Frame -->
     <div class="phone-frame">
-      <!-- App Header -->
-      <header class="app-header">
-        <div class="brand-group">
+      <!-- AUTH SCREEN (When not logged in) -->
+      <div id="authScreen" class="auth-container">
+        <div class="auth-header">
+          <div class="brand-title-large">MESHSYNC</div>
+          <div class="brand-subtitle-large">Decentralized Offline Emergency Network</div>
+        </div>
+
+        <!-- Role Entry Tabs -->
+        <div class="auth-role-tabs">
+          <button class="auth-role-btn active" id="authRoleCitizenBtn" onclick="selectAuthRole('victim')">Citizen / Victim</button>
+          <button class="auth-role-btn" id="authRoleSarBtn" onclick="selectAuthRole('responder')">Search & Rescue</button>
+        </div>
+
+        <!-- Role Portal Description Banner -->
+        <div class="auth-role-notice" id="authRoleNotice">
+          CITIZEN PORTAL: Send emergency SOS distress signals and notify rescuers when you are safe.
+        </div>
+
+        <!-- Auth Mode Switcher (Sign In vs Sign Up) -->
+        <div class="auth-mode-tabs">
+          <button class="auth-mode-tab active" id="authModeSignIn" onclick="setAuthMode(false)">Sign In</button>
+          <button class="auth-mode-tab" id="authModeSignUp" onclick="setAuthMode(true)">Create Account</button>
+        </div>
+
+        <!-- Dynamic Form Fields -->
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="auth-form">
+          <div class="form-group">
+            <label class="input-label">Full Name</label>
+            <input type="text" id="authNameInput" required placeholder="Enter full name" value="Aryan Sinha">
+          </div>
+
+          <!-- Citizen Specific Fields -->
+          <div id="citizenFields">
+            <div class="form-group">
+              <label class="input-label">Mobile Number / Emergency ID</label>
+              <input type="tel" id="authPhoneInput" placeholder="+91 98765 43210" value="+91 98765 43210">
+            </div>
+          </div>
+
+          <!-- Responder Specific Fields -->
+          <div id="responderFields" style="display: none;">
+            <div class="form-group">
+              <label class="input-label">Responder Badge / Official ID</label>
+              <input type="text" id="authBadgeInput" placeholder="SAR-8821" value="SAR-8821">
+            </div>
+            <div class="form-group">
+              <label class="input-label">SAR Agency / Squad Unit Code</label>
+              <input type="text" id="authUnitInput" placeholder="SAR-ALPHA" value="SAR-ALPHA">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="input-label">Security PIN / Password</label>
+            <input type="password" id="authPinInput" required placeholder="••••" value="1234">
+          </div>
+
+          <button type="submit" class="auth-submit-btn" id="authSubmitBtn">SIGN IN AS CITIZEN</button>
+        </form>
+      </div>
+
+      <!-- MAIN APP SCREEN (When logged in) -->
+      <div id="mainAppScreen" style="display: none; height: 100%; display: flex; flex-direction: column;">
+        <!-- App Header -->
+        <header class="app-header">
           <div>
-            <div class="brand-title">MESHSYNC</div>
-            <div class="brand-subtitle">Offline Emergency Relay</div>
+            <div class="brand-title" id="appPortalTitle">CITIZEN SOS PORTAL</div>
+            <div class="brand-subtitle" id="appUserProfileSubtitle">Aryan Sinha · +91 98765 43210</div>
           </div>
-        </div>
-        <div class="header-actions">
-          <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">Light</button>
-          <button class="peers-chip" id="openPeersBtn">2 Peers</button>
-        </div>
-      </header>
-
-      <!-- Main Scrollable Screen Content -->
-      <main class="app-content">
-        <!-- Status Bar Controls -->
-        <section class="tactical-status-bar">
-          <!-- Role Switcher -->
-          <div class="role-segmented-control">
-            <button class="role-segment active" id="roleVictimBtn" onclick="setRole('victim')">Victim / Citizen</button>
-            <button class="role-segment" id="roleResponderBtn" onclick="setRole('responder')">Search & Rescue</button>
+          <div class="header-actions">
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">Light</button>
+            <button class="peers-chip" id="openPeersBtn">2 Peers</button>
+            <button class="logout-btn" onclick="logoutUser()" title="Sign Out">Logout</button>
           </div>
+        </header>
 
-          <!-- Radio Status Card -->
-          <div class="radio-status-card">
-            <div>
+        <!-- Main Scrollable Screen Content -->
+        <main class="app-content">
+          <!-- Radio Status Bar -->
+          <section class="tactical-status-bar">
+            <div class="radio-status-card">
               <div>
-                <span class="node-nickname" id="nodeNickname">C|dev-K7P2</span>
-                <span class="status-badge" id="radioStateBadge">ONLINE</span>
+                <div>
+                  <span class="node-nickname" id="nodeNickname">C|dev-K7P2</span>
+                  <span class="status-badge" id="radioStateBadge">ONLINE</span>
+                </div>
+                <div class="radio-subtext" id="radioSubtext">Advertising & Discovering · 2 reachable peers</div>
               </div>
-              <div class="radio-subtext" id="radioSubtext">Advertising & Discovering · 2 in range</div>
+              <button class="radio-toggle-btn" id="radioToggleBtn" onclick="toggleRadio()">Stop</button>
             </div>
-            <button class="radio-toggle-btn" id="radioToggleBtn" onclick="toggleRadio()">Stop</button>
-          </div>
 
-          <!-- GPS Warning Banner -->
-          <div class="gps-warning-card" id="gpsWarningCard" style="display: none;">
-            <span>GPS is off. Nearby requires location.</span>
-            <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--sos-red); font-weight:bold; cursor:pointer;">Fix</button>
-          </div>
-        </section>
-
-        <!-- VIEW 1: VICTIM VIEW -->
-        <div id="victimView" class="view-container">
-          <!-- Hero SOS Card -->
-          <section class="hero-sos-card">
-            <button class="hero-sos-button" onclick="openSosModal()">
-              <span class="sos-icon">SOS</span>
-              <span class="sos-label">SEND SOS</span>
-            </button>
-            <p class="hero-caption">Tap to broadcast emergency signal over offline mesh</p>
-
-            <!-- Quick Category Presets -->
-            <div class="quick-category-grid">
-              <button class="quick-cat-btn" onclick="openSosModal('medical')">Medical</button>
-              <button class="quick-cat-btn" onclick="openSosModal('trapped')">Trapped</button>
-              <button class="quick-cat-btn" onclick="openSosModal('fire')">Fire</button>
-              <button class="quick-cat-btn" onclick="openSosModal('supplies')">Supplies</button>
+            <!-- GPS Warning Banner -->
+            <div class="gps-warning-card" id="gpsWarningCard" style="display: none;">
+              <span>GPS is off. Nearby requires location.</span>
+              <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--sos-red); font-weight:bold; cursor:pointer;">Fix</button>
             </div>
           </section>
 
-          <!-- Active Distress Signals Section -->
-          <section class="distress-signals-section">
-            <div class="section-header">
-              <h3>Active Signals</h3>
-              <span class="active-count-badge" id="myActiveCount">1 active</span>
+          <!-- VIEW 1: CITIZEN / VICTIM VIEW (Only visible to Citizen) -->
+          <div id="victimView" class="view-container">
+            <!-- Hero SOS Card -->
+            <section class="hero-sos-card">
+              <button class="hero-sos-button" onclick="openSosModal()">
+                <span class="sos-icon">SOS</span>
+                <span class="sos-label">SEND SOS</span>
+              </button>
+              <p class="hero-caption">Tap to broadcast emergency signal over offline mesh</p>
+
+              <!-- Quick Category Presets -->
+              <div class="quick-category-grid">
+                <button class="quick-cat-btn" onclick="openSosModal('medical')">Medical</button>
+                <button class="quick-cat-btn" onclick="openSosModal('trapped')">Trapped</button>
+                <button class="quick-cat-btn" onclick="openSosModal('fire')">Fire</button>
+                <button class="quick-cat-btn" onclick="openSosModal('supplies')">Supplies</button>
+              </div>
+            </section>
+
+            <!-- Active Distress Signals Section -->
+            <section class="distress-signals-section">
+              <div class="section-header">
+                <h3>Your Active Distress Signals</h3>
+                <span class="active-count-badge" id="myActiveCount">1 active</span>
+              </div>
+              <div id="myMessagesList" class="incident-cards-list"></div>
+            </section>
+
+            <!-- Passive Relay Guide Card -->
+            <div class="passive-relay-card">
+              <div class="relay-title">Passive Relay Active</div>
+              <div class="relay-desc">Your device automatically relays encrypted emergency packets for nearby survivors without exposing other private signals.</div>
             </div>
-            <div id="myMessagesList" class="incident-cards-list"></div>
-          </section>
-
-          <!-- Passive Relay Guide Card -->
-          <div class="passive-relay-card">
-            <div class="relay-title">Passive Relay Active</div>
-            <div class="relay-desc">Your device automatically relays encrypted emergency packets for nearby survivors.</div>
-          </div>
-        </div>
-
-        <!-- VIEW 2: RESPONDER VIEW -->
-        <div id="responderView" class="view-container" style="display: none;">
-          <!-- Triage Metrics Bar -->
-          <section class="triage-metrics-card">
-            <div class="metrics-grid">
-              <div class="metric-box">
-                <div class="metric-val" id="metricActiveSos">2</div>
-                <div class="metric-lbl">ACTIVE SOS</div>
-              </div>
-              <div class="metric-box">
-                <div class="metric-val" id="metricPeopleAtRisk">5</div>
-                <div class="metric-lbl">PEOPLE AT RISK</div>
-              </div>
-              <div class="metric-box">
-                <div class="metric-val" id="metricAckConfirmed">1</div>
-                <div class="metric-lbl">ACK CONFIRMED</div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Category Filter Bar -->
-          <div class="filter-chips-bar" id="responderFilterBar">
-            <button class="filter-pill active" onclick="setResponderFilter('ALL')">All (2)</button>
-            <button class="filter-pill" onclick="setResponderFilter('MEDICAL')">MEDICAL (1)</button>
-            <button class="filter-pill" onclick="setResponderFilter('TRAPPED')">TRAPPED (1)</button>
-            <button class="filter-pill" onclick="setResponderFilter('FIRE')">FIRE (0)</button>
-            <button class="filter-pill" onclick="setResponderFilter('SUPPLIES')">SUPPLIES (0)</button>
           </div>
 
-          <!-- Incidents Feed -->
-          <div id="responderIncidentsList" class="incident-cards-list"></div>
-        </div>
-      </main>
+          <!-- VIEW 2: SEARCH & RESCUE VIEW (Only visible to SAR Responder) -->
+          <div id="responderView" class="view-container" style="display: none;">
+            <!-- Triage Metrics Bar -->
+            <section class="triage-metrics-card">
+              <div class="metrics-grid">
+                <div class="metric-box">
+                  <div class="metric-val" id="metricActiveSos">2</div>
+                  <div class="metric-lbl">ACTIVE SOS</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-val" id="metricPeopleAtRisk">5</div>
+                  <div class="metric-lbl">PEOPLE AT RISK</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-val" id="metricAckConfirmed">1</div>
+                  <div class="metric-lbl">ACK CONFIRMED</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Category Filter Bar -->
+            <div class="filter-chips-bar" id="responderFilterBar">
+              <button class="filter-pill active" onclick="setResponderFilter('ALL')">All (2)</button>
+              <button class="filter-pill" onclick="setResponderFilter('MEDICAL')">MEDICAL (1)</button>
+              <button class="filter-pill" onclick="setResponderFilter('TRAPPED')">TRAPPED (1)</button>
+              <button class="filter-pill" onclick="setResponderFilter('FIRE')">FIRE (0)</button>
+              <button class="filter-pill" onclick="setResponderFilter('SUPPLIES')">SUPPLIES (0)</button>
+            </div>
+
+            <!-- Incidents Feed -->
+            <div id="responderIncidentsList" class="incident-cards-list"></div>
+          </div>
+        </main>
+      </div>
     </div>
 
     <!-- Live Simulation Control Panel (Desktop Side Panel) -->
@@ -128,28 +183,25 @@
       <div class="panel-header">
         <h2>MeshSync Simulator</h2>
       </div>
-      <p class="panel-desc">Minimalist P2P offline mesh verification:</p>
+      <p class="panel-desc">Role-based authentication & strict routing:</p>
 
       <div class="sim-section">
-        <h3>1. Emergency Trigger</h3>
-        <button class="sim-btn red" onclick="openSosModal('medical')">Broadcast SOS</button>
-      </div>
-
-      <div class="sim-section">
-        <h3>2. Theme & Display</h3>
+        <h3>1. Switch Active Profile</h3>
         <div class="sim-grid">
-          <button class="sim-btn" onclick="toggleTheme()">Toggle Dark / Light Mode</button>
-          <button class="sim-btn" onclick="simToggleGpsState()">Toggle GPS Status</button>
+          <button class="sim-btn" onclick="quickLoginCitizen()">Login as Citizen</button>
+          <button class="sim-btn" onclick="quickLoginResponder()">Login as SAR Team</button>
+          <button class="sim-btn" onclick="logoutUser()">Log Out to Auth</button>
+          <button class="sim-btn" onclick="toggleTheme()">Toggle Dark/Light</button>
         </div>
       </div>
 
       <div class="sim-section">
-        <h3>3. Simulate Inbound Mesh Events</h3>
+        <h3>2. Mesh Event Simulation</h3>
         <div class="sim-grid">
-          <button class="sim-btn" onclick="simReceiveInboundSos()">Inbound SOS</button>
-          <button class="sim-btn" onclick="simReceiveResponderAck()">Responder ACK</button>
+          <button class="sim-btn" onclick="simReceiveInboundSos()">Inbound SOS (SAR view)</button>
+          <button class="sim-btn" onclick="simReceiveResponderAck()">Responder ACK (Citizen view)</button>
           <button class="sim-btn" onclick="simTogglePeer()">Toggle Peer Link</button>
-          <button class="sim-btn" onclick="setRole(state.role === 'victim' ? 'responder' : 'victim')">Toggle Role</button>
+          <button class="sim-btn" onclick="simToggleGpsState()">Toggle GPS Status</button>
         </div>
       </div>
 
@@ -159,7 +211,7 @@
     </aside>
   </div>
 
-  <!-- MODAL: SOS Compose Dispatcher -->
+  <!-- MODAL: SOS Compose Dispatcher (Citizen Only) -->
   <div class="modal-overlay" id="sosModal" style="display: none;">
     <div class="modal-sheet">
       <div class="modal-header">
