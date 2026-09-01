@@ -50,11 +50,11 @@ class _VictimScreenState extends State<VictimScreen> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: MeshTheme.terracottaRed,
+          backgroundColor: MeshTheme.emergencyRed,
           behavior: SnackBarBehavior.floating,
           content: Text(
             'Emergency broadcast dispatched (ID: #${message.id.substring(0, 6)})',
-            style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
           ),
         ),
       );
@@ -68,14 +68,14 @@ class _VictimScreenState extends State<VictimScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
-        // --- PRIMARY FOCAL ACTION: HERO SOS SECTION ---
+        // --- PRIMARY FOCAL SOS HERO ---
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
           decoration: BoxDecoration(
             color: theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: theme.dividerColor),
           ),
           child: Column(
@@ -83,34 +83,31 @@ class _VictimScreenState extends State<VictimScreen> {
               Text(
                 'Emergency Broadcast',
                 style: TextStyle(
-                  fontFamily: 'Georgia',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.3,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
-                'Radio beacon relays over offline mesh to search teams',
+                'Direct radio beacon over offline mesh to search teams',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Georgia',
                   fontSize: 13,
-                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.normal,
                   color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-              // Prominent Terracotta Red Primary Button
+              // Single Primary Red Call to Action
               SizedBox(
-                width: 160,
-                height: 160,
+                width: 148,
+                height: 148,
                 child: ElevatedButton(
                   onPressed: () => _compose(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: MeshTheme.terracottaRed,
+                    backgroundColor: MeshTheme.emergencyRed,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: const CircleBorder(),
@@ -119,15 +116,14 @@ class _VictimScreenState extends State<VictimScreen> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.sos_outlined, size: 52, color: Colors.white),
-                      SizedBox(height: 4),
+                      Icon(Icons.sos_outlined, size: 48, color: Colors.white),
+                      SizedBox(height: 2),
                       Text(
                         'SEND SOS',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ],
@@ -135,9 +131,9 @@ class _VictimScreenState extends State<VictimScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-              // Secondary Category Quick Filters
+              // Neutral Category Quick Selectors
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -171,20 +167,17 @@ class _VictimScreenState extends State<VictimScreen> {
           ),
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
         // --- ACTIVE DISTRESS SIGNALS SECTION ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
               'Active Distress Signals',
               style: TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
             ),
@@ -192,34 +185,32 @@ class _VictimScreenState extends State<VictimScreen> {
               Text(
                 '${mine.length} active',
                 style: const TextStyle(
-                  fontFamily: 'Georgia',
-                  fontSize: 13,
-                  color: MeshTheme.terracottaRed,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: MeshTheme.emergencyRed,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
         if (mine.isEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: theme.dividerColor),
             ),
             child: Column(
               children: [
-                Icon(Icons.shield_outlined, size: 36, color: MeshTheme.sageGreen),
-                const SizedBox(height: 12),
+                Icon(Icons.shield_outlined, size: 32, color: MeshTheme.safeGreen),
+                const SizedBox(height: 10),
                 Text(
                   'No Distress Signals Active',
                   style: TextStyle(
-                    fontFamily: 'Georgia',
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
@@ -228,9 +219,8 @@ class _VictimScreenState extends State<VictimScreen> {
                   'Your phone automatically acts as an offline packet courier for nearby survivors.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Georgia',
                     color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
-                    fontSize: 13,
+                    fontSize: 12,
                     height: 1.4,
                   ),
                 ),
@@ -245,7 +235,7 @@ class _VictimScreenState extends State<VictimScreen> {
               acked: app.isAcked(message.id),
               onSafe: () => _confirmSafe(context, message.id),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
       ],
     );
@@ -255,20 +245,20 @@ class _VictimScreenState extends State<VictimScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Mark as Safe?', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
+        title: const Text('Mark as Safe?', style: TextStyle(fontWeight: FontWeight.w600)),
         content: const Text(
           'This will cancel your active SOS beacon and broadcast that you have self-resolved to all rescue nodes.',
-          style: TextStyle(fontFamily: 'Georgia', fontSize: 13, height: 1.4),
+          style: TextStyle(fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep Active', style: TextStyle(fontFamily: 'Georgia')),
+            child: const Text('Keep Active'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: MeshTheme.sageGreen),
-            child: const Text('Confirm Safe', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
+            style: FilledButton.styleFrom(backgroundColor: MeshTheme.safeGreen),
+            child: const Text('Confirm Safe', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -279,7 +269,7 @@ class _VictimScreenState extends State<VictimScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Distress signal marked as safe.', style: TextStyle(fontFamily: 'Georgia')),
+            content: Text('Distress signal marked as safe.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -307,16 +297,16 @@ class _CategoryQuickBtn extends StatelessWidget {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         side: BorderSide(color: theme.dividerColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 18),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontFamily: 'Georgia', fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -345,44 +335,42 @@ class _SentSosCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: acked ? MeshTheme.sageGreen : theme.dividerColor,
-          width: acked ? 1.5 : 1.0,
+          color: acked ? MeshTheme.safeGreen : theme.dividerColor,
+          width: 1.0,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: acked ? MeshTheme.sageGreen.withValues(alpha: 0.1) : theme.scaffoldBackgroundColor,
+              color: acked ? MeshTheme.safeGreen.withValues(alpha: 0.12) : theme.scaffoldBackgroundColor,
               border: Border(bottom: BorderSide(color: theme.dividerColor)),
             ),
             child: Row(
               children: [
                 Icon(
                   acked ? Icons.check_circle_outline : Icons.radio_button_checked,
-                  size: 16,
-                  color: acked ? MeshTheme.sageGreen : MeshTheme.terracottaRed,
+                  size: 15,
+                  color: acked ? MeshTheme.safeGreen : MeshTheme.emergencyRed,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     acked ? 'Responder Confirmed Receipt' : 'Relayed across $peerCount mesh nodes',
                     style: TextStyle(
-                      fontFamily: 'Georgia',
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: acked ? MeshTheme.sageGreen : theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      color: acked ? MeshTheme.safeGreen : theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
                 Text(
                   _elapsed(core.ts),
                   style: TextStyle(
-                    fontFamily: 'Georgia',
                     fontSize: 11,
                     color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                   ),
@@ -391,7 +379,7 @@ class _SentSosCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -400,12 +388,11 @@ class _SentSosCard extends StatelessWidget {
                   children: [
                     Text(
                       MeshTheme.getCategoryLabel(core.cat),
-                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     Text(
                       '${core.n ?? 1} ${(core.n ?? 1) == 1 ? "Person" : "People"}',
                       style: TextStyle(
-                        fontFamily: 'Georgia',
                         fontSize: 12,
                         color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                       ),
@@ -416,20 +403,20 @@ class _SentSosCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     core.txt!,
-                    style: const TextStyle(fontFamily: 'Georgia', fontSize: 13, height: 1.4),
+                    style: const TextStyle(fontSize: 13, height: 1.4),
                   ),
                 ],
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: onSafe,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: MeshTheme.sageGreen,
-                      side: const BorderSide(color: MeshTheme.sageGreen),
+                      foregroundColor: MeshTheme.safeGreen,
+                      side: const BorderSide(color: MeshTheme.safeGreen),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: const Text('I Am Safe (Resolve)', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
+                    child: const Text('I Am Safe (Resolve)', style: TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -484,6 +471,9 @@ class _SosSheetState extends State<_SosSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: EdgeInsets.only(
         left: 20,
@@ -497,69 +487,136 @@ class _SosSheetState extends State<_SosSheet> {
         children: [
           const Text(
             'Broadcast Emergency SOS',
-            style: TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
+
+          // Stacked Category Selection
+          Text(
+            'Emergency Category',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               for (final c in Category.values)
                 ChoiceChip(
-                  label: Text(c.wire, style: const TextStyle(fontFamily: 'Georgia', fontSize: 12)),
+                  label: Text(c.wire, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   selected: _cat == c,
                   onSelected: (_) => setState(() => _cat = c),
                 ),
             ],
           ),
           const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Casualty / Survivor Count', style: TextStyle(fontFamily: 'Georgia', fontSize: 14)),
-              Row(
-                children: [
-                  IconButton.outlined(
-                    onPressed: _headcount > 1 ? () => setState(() => _headcount--) : null,
-                    icon: const Icon(Icons.remove, size: 16),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('$_headcount', style: const TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.bold)),
-                  ),
-                  IconButton.outlined(
-                    onPressed: () => setState(() => _headcount++),
-                    icon: const Icon(Icons.add, size: 16),
-                  ),
-                ],
-              ),
-            ],
+
+          // Dedicated Full-Height Stepper Touch Target
+          Text(
+            'Casualty / Survivor Count',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.cardTheme.color,
+              border: Border.all(color: theme.dividerColor),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: _headcount > 1 ? () => setState(() => _headcount--) : null,
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
+                  child: Container(
+                    width: 52,
+                    height: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border(right: BorderSide(color: theme.dividerColor)),
+                    ),
+                    child: Icon(
+                      Icons.remove,
+                      size: 20,
+                      color: _headcount > 1 ? theme.colorScheme.onSurface : theme.dividerColor,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '$_headcount ${_headcount == 1 ? "Person" : "People"}',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => setState(() => _headcount++),
+                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
+                  child: Container(
+                    width: 52,
+                    height: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border(left: BorderSide(color: theme.dividerColor)),
+                    ),
+                    child: Icon(
+                      Icons.add,
+                      size: 20,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Stacked Details Textarea
+          Text(
+            'Details / Landmark (Optional)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _text,
             maxLength: kMaxTextLength,
-            maxLines: 2,
-            style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+            maxLines: 3,
+            style: const TextStyle(fontSize: 14),
             decoration: const InputDecoration(
-              labelText: 'Details / Landmark info (optional)',
+              hintText: 'e.g. 2nd floor, stairwell blocked, need stretchers',
               alignLabelWithHint: true,
             ),
           ),
           const SizedBox(height: 16),
+
+          // Single Primary Red Broadcast Action Button
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 48,
             child: FilledButton(
               onPressed: () => Navigator.pop(
                 context,
                 _SosRequest(_cat, _headcount, _text.text.trim()),
               ),
               style: FilledButton.styleFrom(
-                backgroundColor: MeshTheme.terracottaRed,
+                backgroundColor: MeshTheme.emergencyRed,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('BROADCAST DISTRESS SIGNAL', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14)),
+              child: const Text('BROADCAST DISTRESS SIGNAL', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
             ),
           ),
         ],

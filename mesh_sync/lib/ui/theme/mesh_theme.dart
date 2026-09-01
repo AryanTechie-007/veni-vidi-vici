@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../messages/mesh_message.dart';
 
-/// Cognitive / Exaggerated Minimalism Theme for MeshSync.
-/// Editorial Serif display typography, warm muted organic palette (Dark Mode, Light Mode, Terracotta, Sage).
+/// Clean Functional Sans-Serif Design System for MeshSync.
+/// Structured 3-tier dark surface system: #121212 (bg), #1E1E1E (card), #2E2E2E (subtle border).
 class MeshTheme {
-  // Warm Dark Palette
-  static const Color darkBg = Color(0xFF0F0E0D);
-  static const Color darkCard = Color(0xFF181715);
-  static const Color darkBorder = Color(0xFF2E2C28);
-  static const Color darkText = Color(0xFFF4F1EA);
-  static const Color darkTextMuted = Color(0xFFA8A39A);
+  // Structured 3-Tier Dark Elevation System
+  static const Color darkBg = Color(0xFF121212);
+  static const Color darkCard = Color(0xFF1E1E1E);
+  static const Color darkBorder = Color(0xFF2E2E2E);
+  static const Color darkText = Color(0xFFF9FAFB);
+  static const Color darkTextMuted = Color(0xFF9CA3AF);
 
-  // Warm Light Palette
-  static const Color lightBg = Color(0xFFF7F5F0);
+  // Clean Neutral Light Palette
+  static const Color lightBg = Color(0xFFF8FAFC);
   static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightBorder = Color(0xFFE3DFD5);
-  static const Color lightText = Color(0xFF1C1A17);
-  static const Color lightTextMuted = Color(0xFF7A756D);
+  static const Color lightBorder = Color(0xFFE2E8F0);
+  static const Color lightText = Color(0xFF0F172A);
+  static const Color lightTextMuted = Color(0xFF64748B);
 
-  // Editorial Warm Accents
-  static const Color terracottaRed = Color(0xFFC93B2B);
-  static const Color terracottaHover = Color(0xFFB53223);
-  static const Color sageGreen = Color(0xFF4A6B53);
-  static const Color warmSand = Color(0xFFD4A373);
-  static const Color deepOchre = Color(0xFFD97706);
+  // Primary Distress Action Color (Strictly for SOS / Broadcast)
+  static const Color emergencyRed = Color(0xFFDC2626);
+  static const Color emergencyRedHover = Color(0xFFB91C1C);
+
+  // Status & Utility Accents
+  static const Color safeGreen = Color(0xFF16A34A);
+  static const Color warningOrange = Color(0xFFEA580C);
+  static const Color infoBlue = Color(0xFF2563EB);
 
   static Color getCategoryColor(Category? cat, {bool isDark = true}) {
     return switch (cat) {
-      Category.medical => terracottaRed,
-      Category.trapped => deepOchre,
+      Category.medical => emergencyRed,
+      Category.trapped => warningOrange,
       Category.fire => const Color(0xFFB91C1C),
-      Category.supplies => const Color(0xFF2563EB),
-      Category.safe => sageGreen,
+      Category.supplies => infoBlue,
+      Category.safe => safeGreen,
       null => isDark ? darkTextMuted : lightTextMuted,
     };
   }
@@ -64,14 +66,14 @@ class MeshTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBg,
-      fontFamily: 'Georgia',
+      fontFamily: 'Inter',
       colorScheme: const ColorScheme.dark(
         primary: darkText,
         onPrimary: darkBg,
         surface: darkCard,
         onSurface: darkText,
-        error: terracottaRed,
-        onError: darkText,
+        error: emergencyRed,
+        onError: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkBg,
@@ -84,17 +86,9 @@ class MeshTheme {
         color: darkCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           side: const BorderSide(color: darkBorder, width: 1),
         ),
-      ),
-      tabBarTheme: const TabBarTheme(
-        labelColor: darkText,
-        unselectedLabelColor: darkTextMuted,
-        indicatorColor: darkText,
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: darkBorder,
-        labelStyle: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 13),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -108,7 +102,7 @@ class MeshTheme {
           }),
           side: WidgetStateProperty.all(const BorderSide(color: darkBorder, width: 1)),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
         ),
       ),
@@ -116,43 +110,43 @@ class MeshTheme {
         style: FilledButton.styleFrom(
           backgroundColor: darkText,
           foregroundColor: darkBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          textStyle: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: darkText,
           side: const BorderSide(color: darkBorder, width: 1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 13),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: darkCard,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: darkBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: darkBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: darkText, width: 1.5),
         ),
-        labelStyle: TextStyle(fontFamily: 'Georgia', color: darkTextMuted),
-        hintStyle: TextStyle(fontFamily: 'Georgia', color: darkTextMuted),
+        labelStyle: TextStyle(color: darkTextMuted, fontSize: 13),
+        hintStyle: TextStyle(color: darkTextMuted, fontSize: 13),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: darkCard,
         selectedColor: darkText,
-        labelStyle: const TextStyle(fontFamily: 'Georgia', color: darkText, fontSize: 12),
-        secondaryLabelStyle: const TextStyle(fontFamily: 'Georgia', color: darkBg, fontSize: 12, fontWeight: FontWeight.bold),
+        labelStyle: const TextStyle(color: darkText, fontSize: 12, fontWeight: FontWeight.w500),
+        secondaryLabelStyle: const TextStyle(color: darkBg, fontSize: 12, fontWeight: FontWeight.w600),
         side: const BorderSide(color: darkBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
@@ -160,7 +154,7 @@ class MeshTheme {
         backgroundColor: darkCard,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: darkBorder, width: 1),
         ),
       ),
@@ -168,7 +162,7 @@ class MeshTheme {
         backgroundColor: darkBg,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
           side: BorderSide(color: darkBorder, width: 1),
         ),
       ),
@@ -181,14 +175,14 @@ class MeshTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: lightBg,
-      fontFamily: 'Georgia',
+      fontFamily: 'Inter',
       colorScheme: const ColorScheme.light(
         primary: lightText,
         onPrimary: lightBg,
         surface: lightCard,
         onSurface: lightText,
-        error: terracottaRed,
-        onError: lightBg,
+        error: emergencyRed,
+        onError: Colors.white,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: lightBg,
@@ -201,17 +195,9 @@ class MeshTheme {
         color: lightCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           side: const BorderSide(color: lightBorder, width: 1),
         ),
-      ),
-      tabBarTheme: const TabBarTheme(
-        labelColor: lightText,
-        unselectedLabelColor: lightTextMuted,
-        indicatorColor: lightText,
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: lightBorder,
-        labelStyle: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 13),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -225,7 +211,7 @@ class MeshTheme {
           }),
           side: WidgetStateProperty.all(const BorderSide(color: lightBorder, width: 1)),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
         ),
       ),
@@ -233,43 +219,43 @@ class MeshTheme {
         style: FilledButton.styleFrom(
           backgroundColor: lightText,
           foregroundColor: lightBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          textStyle: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: lightText,
           side: const BorderSide(color: lightBorder, width: 1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 13),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: lightCard,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: lightBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: lightBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
+          borderRadius: BorderRadius.all(Radius.circular(6)),
           borderSide: BorderSide(color: lightText, width: 1.5),
         ),
-        labelStyle: TextStyle(fontFamily: 'Georgia', color: lightTextMuted),
-        hintStyle: TextStyle(fontFamily: 'Georgia', color: lightTextMuted),
+        labelStyle: TextStyle(color: lightTextMuted, fontSize: 13),
+        hintStyle: TextStyle(color: lightTextMuted, fontSize: 13),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: lightCard,
         selectedColor: lightText,
-        labelStyle: const TextStyle(fontFamily: 'Georgia', color: lightText, fontSize: 12),
-        secondaryLabelStyle: const TextStyle(fontFamily: 'Georgia', color: lightBg, fontSize: 12, fontWeight: FontWeight.bold),
+        labelStyle: const TextStyle(color: lightText, fontSize: 12, fontWeight: FontWeight.w500),
+        secondaryLabelStyle: const TextStyle(color: lightBg, fontSize: 12, fontWeight: FontWeight.w600),
         side: const BorderSide(color: lightBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
@@ -277,7 +263,7 @@ class MeshTheme {
         backgroundColor: lightCard,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: lightBorder, width: 1),
         ),
       ),
@@ -285,7 +271,7 @@ class MeshTheme {
         backgroundColor: lightBg,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
           side: BorderSide(color: lightBorder, width: 1),
         ),
       ),

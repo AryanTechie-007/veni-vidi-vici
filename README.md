@@ -55,36 +55,64 @@ MeshSync provides dedicated, isolated portals for survivors and emergency respon
 
 ---
 
-## 🎨 4. Design Philosophy: Cognitive Minimalism
+## 🎨 4. Design System & UI Specifications
 
-MeshSync uses an **exaggerated, cognitive minimalism** layout designed for high-stress disaster conditions:
-
-1. **One Primary Action Per Screen**: Unmistakable focal hierarchy. Citizens have a single dominant emergency SOS trigger, preventing decision fatigue during panic.
-2. **Editorial Serif Typography**: Distinctive `Newsreader` / `Georgia` display typography with strong weight contrast and oversized headings for maximum legibility.
-3. **Restrained Organic Palette**:
-   - **Dark Mode (`#0F0E0D`)**: Glare-free, warm dark background optimized for OLED battery longevity.
-   - **Light Mode (`#F7F5F0`)**: High-contrast, warm tone for harsh outdoor sunlight.
-   - **Terracotta Crimson (`#C93B2B`)**: Single focal emergency accent color.
-   - **Sage Green (`#4A6B53`)**: Subdued confirmation and network status indicator.
-4. **Deliberate Whitespace & Seamless Radio Lifecycle**: Background mesh radio runs automatically upon launch without manual toggle buttons cluttering the emergency interface.
+1. **Functional Sans-Serif System Font**: High-legibility `Inter` / `Roboto` / `SF Pro` system type stack. Eliminates decorative italics in favor of immediate scannability (bold/semibold headers, regular body).
+2. **Structured 3-Tier Dark Elevation**:
+   - **Background**: `#121212` (subtle base canvas)
+   - **Card Surface**: `#1E1E1E` (elevated interaction layer)
+   - **Borders & Dividers**: `#2E2E2E` (subtle 1px flat boundaries)
+   - **Neutral Light Mode**: Clean `#F8FAFC` background with `#FFFFFF` cards and `#E2E8F0` borders.
+3. **Strict Color Discipline**: Primary Red (`#DC2626`) is strictly reserved for the single primary call to action (SOS Button / Broadcast Dispatch). Neutral surfaces are used for toggles and category chips.
+4. **Form Stacking & Touch Targets**: Consistent vertical stacking (labels above inputs) and dedicated full-height stepper touch targets (46px height with distinct +/- click areas).
 
 ---
 
-## 📝 5. Changelog & Version History
+## 📝 5. Complete Version History & Changelog
 
-### Changes in Version v0.9:
-1. **Removed Manual Radio Toggle Buttons**: Eliminated the redundant "Start Radio / Stop Radio" control buttons and status cards from both the mobile app and preview screens. The Nearby Connections radio now boots and operates automatically in the background.
-2. **Simplified Interface Hierarchy**: Cleaned up the main screen to dedicate full viewport space to the primary emergency tools (Distress SOS for Citizens, Incident Triage for SAR Teams).
-3. **Appended Release Documentation**: Updated changelog and repository push records.
+### **v1.0** (Current Release)
+- **1.0.1 [Typography]**: Switched to a functional sans-serif typography stack (`Inter` / `Roboto` / `SF Pro`) across both Flutter and web preview environments; eliminated decorative italics in helper text for immediate emergency scannability.
+- **1.0.2 [Elevation & Palette]**: Standardized elevation on a structured 3-tier dark surface system: Background `#121212`, Card Surface `#1E1E1E`, and Border `#2E2E2E`.
+- **1.0.3 [Color Discipline]**: Primary Red (`#DC2626`) strictly assigned to the single primary call to action (SOS / Broadcast); converted category chips and toggles to neutral surface treatments.
+- **1.0.4 [Form & Steppers]**: Enforced vertical label-over-input stacking and upgraded casualty steppers to dedicated full-height touch targets (46px height).
+- **1.0.5 [Changelog]**: Restructured full repository changelog mapping every historical change to its exact version release.
 
-### Changes in Version v0.8:
-1. **Removed Superficial Badge Elements**: Completely removed the "ONLINE / OFFLINE" pill indicators across the Flutter application and preview screens for a cleaner, authentic functional design.
-2. **Simplified Radio Status Display**: Streamlined node call-sign and network description to show real reachable peer counts and clear Start/Stop action buttons.
+### **v0.9**
+- **0.9.1 [Radio Lifecycle]**: Completely removed manual "Start Radio / Stop Radio" control buttons and status cards; Nearby Connections radio lifecycle now automated silently in the background upon login.
+- **0.9.2 [Viewport Optimization]**: Reclaimed screen real estate for primary incident response cards.
 
-### Changes in Version v0.7:
-1. **Terminology Standardization**: Removed descriptive color labels ("Linen", "Obsidian") from all UI tooltips, toast notifications, code comments, and documentation in favor of clean, standardized **Light Mode** and **Dark Mode**.
-2. **Complete Technical Documentation**: Overhauled `README.md` into comprehensive technical documentation detailing system architecture, packet protocols, role routing, and design guidelines.
-3. **Refined Serif Typographic Hierarchy**: Polished `Georgia` / `Newsreader` font rules, letter spacings, and heading weights across Flutter components and the web simulator.
+### **v0.8**
+- **0.8.1 [UI Integrity]**: Removed artificial "ONLINE / OFFLINE" pill badges from the radio card to prevent visual clutter and maintain functional authenticity.
+- **0.8.2 [Network Indicators]**: Simplified reachable peer node indicators into a clean top-bar modal button.
+
+### **v0.7**
+- **0.7.1 [Theme Standardization]**: Standardized all UI theme labels, tooltips, and toast notifications to clean **Light Mode** and **Dark Mode**, removing ambiguous descriptive labels.
+- **0.7.2 [Documentation]**: Overhauled `README.md` into comprehensive technical architecture and protocol documentation.
+
+### **v0.6**
+- **0.6.1 [Focal Hierarchy]**: Implemented single primary action hierarchy per screen (prominent circular SOS button).
+- **0.6.2 [Whitespace System]**: Implemented strict 8px layout grid with responsive padding.
+
+### **v0.5**
+- **0.5.1 [Authentication]**: Created dedicated entry portals for Citizen / Victim and Search & Rescue (SAR) Responder.
+- **0.5.2 [Strict Role Isolation]**: Implemented strict role-based routing (Citizens can only broadcast outgoing SOS; Responders can only triage incoming feeds).
+- **0.5.3 [Session Management]**: Added profile sign-out / logout action to top navigation.
+
+### **v0.4**
+- **0.4.1 [Header Clean-Up]**: Removed top-left status dot indicator from AppBar for an uncluttered minimalist header.
+
+### **v0.3**
+- **0.3.1 [Scope Reduction]**: Completely removed debug Tactical Log views, tab controllers, and terminal logs from the user-facing interface.
+
+### **v0.2**
+- **0.2.1 [Minimalist Redesign]**: Removed glassmorphism, blur effects, gradients, and heavy drop shadows in favor of flat high-contrast cards.
+- **0.2.2 [Red SOS Trigger]**: Introduced high-visibility emergency Red circular SOS button.
+- **0.2.3 [Web Simulator]**: Created interactive localhost web simulator on port 8000 for browser-based UI inspection.
+
+### **v0.1**
+- **0.1.1 [Core Architecture]**: Initial implementation of offline mesh engine over Google Nearby Connections (`P2P_CLUSTER`).
+- **0.1.2 [Packet Protocol]**: Two-part packet architecture with SHA-256 deterministic deduplication.
+- **0.1.3 [Store-and-Forward]**: Flooding router with auto-acknowledgements and flood-cancellation mechanisms.
 
 ---
 
@@ -105,4 +133,4 @@ Visit **`http://localhost:8000`** in your browser.
 
 ---
 
-v.0.9 Push by - Aryan Time - 21.40 IST
+v.1.0 Push by - Aryan Time - 21.43 IST

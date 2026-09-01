@@ -6,7 +6,7 @@
   <title>MeshSync — Offline Emergency SOS Relay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
       <!-- AUTH SCREEN (When not logged in) -->
       <div id="authScreen" class="auth-container">
         <div class="auth-header">
-          <div class="brand-title-large">MeshSync</div>
+          <div class="brand-title-large">MESHSYNC</div>
           <div class="brand-subtitle-large">Decentralized Offline Emergency Network</div>
         </div>
 
@@ -31,13 +31,13 @@
           Citizen portal: Broadcast emergency distress signals and confirm your safety with search teams.
         </div>
 
-        <!-- Auth Mode Switcher (Sign In vs Sign Up) -->
+        <!-- Auth Mode Switcher (Sign In vs Register) -->
         <div class="auth-mode-tabs">
           <button class="auth-mode-tab active" id="authModeSignIn" onclick="setAuthMode(false)">Sign In</button>
           <button class="auth-mode-tab" id="authModeSignUp" onclick="setAuthMode(true)">Register</button>
         </div>
 
-        <!-- Form -->
+        <!-- Form with Stacked Labels -->
         <form id="authForm" onsubmit="handleAuthSubmit(event)" class="auth-form">
           <div class="form-group">
             <label class="input-label">Full Name</label>
@@ -91,24 +91,24 @@
         <!-- Main Scrollable Content -->
         <main class="app-content">
           <!-- GPS Warning Banner (Only if GPS off) -->
-          <div class="gps-warning-card" id="gpsWarningCard" style="display: none; margin: 12px 18px 0;">
+          <div class="gps-warning-card" id="gpsWarningCard" style="display: none; margin: 12px 16px 0;">
             <span>Location services off. Nearby requires GPS.</span>
-            <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--terracotta); font-weight:bold; cursor:pointer;">Fix</button>
+            <button onclick="toggleGps(true)" style="background:none; border:none; color:var(--red-primary); font-weight:600; cursor:pointer;">Fix</button>
           </div>
 
           <!-- VIEW 1: CITIZEN / VICTIM VIEW -->
           <div id="victimView" class="view-container">
-            <!-- Hero SOS Card (One Primary Action) -->
+            <!-- Hero SOS Card (Single Focal Red Primary Action) -->
             <section class="hero-sos-card">
               <h2 class="hero-title">Emergency Broadcast</h2>
-              <p class="hero-caption">Radio beacon relays over offline mesh to search teams</p>
+              <p class="hero-caption">Direct radio beacon over offline mesh to search teams</p>
 
               <button class="hero-sos-button" onclick="openSosModal()">
                 <span class="sos-icon">SOS</span>
                 <span class="sos-label">SEND SOS</span>
               </button>
 
-              <!-- Quick Category Presets -->
+              <!-- Neutral Quick Category Presets -->
               <div class="quick-category-grid">
                 <button class="quick-cat-btn" onclick="openSosModal('medical')">Medical</button>
                 <button class="quick-cat-btn" onclick="openSosModal('trapped')">Trapped</button>
@@ -140,7 +140,7 @@
               <div class="metrics-grid">
                 <div class="metric-box">
                   <div class="metric-val" id="metricActiveSos">2</div>
-                  <div class="metric-lbl">ACTIVE INCIDENTS</div>
+                  <div class="metric-lbl">ACTIVE SOS</div>
                 </div>
                 <div class="metric-box">
                   <div class="metric-val" id="metricPeopleAtRisk">5</div>
@@ -174,7 +174,7 @@
       <div class="panel-header">
         <h2>MeshSync Simulator</h2>
       </div>
-      <p class="panel-desc">Cognitive minimalism & seamless background radio:</p>
+      <p class="panel-desc">Functional sans-serif system & 3-tier elevation:</p>
 
       <div class="sim-section">
         <h3>1. Switch Role Profiles</h3>
@@ -182,7 +182,7 @@
           <button class="sim-btn" onclick="quickLoginCitizen()">Login as Citizen</button>
           <button class="sim-btn" onclick="quickLoginResponder()">Login as SAR Team</button>
           <button class="sim-btn" onclick="logoutUser()">Log Out to Auth</button>
-          <button class="sim-btn" onclick="toggleTheme()">Toggle Warm Theme</button>
+          <button class="sim-btn" onclick="toggleTheme()">Toggle Theme</button>
         </div>
       </div>
 
@@ -197,7 +197,7 @@
       </div>
 
       <div class="panel-footer">
-        <div>v.0.9 Push by - Aryan Time - 21.40 IST</div>
+        <div>v.1.0 Push by - Aryan Time - 21.43 IST</div>
       </div>
     </aside>
   </div>
@@ -211,7 +211,8 @@
       </div>
 
       <div class="modal-body">
-        <label class="field-label">Category</label>
+        <!-- Stacked Category -->
+        <label class="field-label">Emergency Category</label>
         <div class="category-chip-group">
           <button class="cat-chip active" onclick="selectModalCategory('medical', this)">MEDICAL</button>
           <button class="cat-chip" onclick="selectModalCategory('trapped', this)">TRAPPED</button>
@@ -219,19 +220,22 @@
           <button class="cat-chip" onclick="selectModalCategory('supplies', this)">SUPPLIES</button>
         </div>
 
-        <label class="field-label">People in Danger</label>
-        <div class="headcount-counter-card">
-          <span>Headcount needing assistance</span>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="counter-btn" onclick="adjustHeadcount(-1)">-</button>
-            <span id="modalHeadcount" style="font-weight: bold; width: 24px; text-align: center; font-size: 16px;">1</span>
-            <button class="counter-btn" onclick="adjustHeadcount(1)">+</button>
+        <!-- Full-Height Stepper Control Touch Target -->
+        <label class="field-label">Casualty / Survivor Count</label>
+        <div class="stepper-container">
+          <button class="stepper-touch-btn" onclick="adjustHeadcount(-1)">−</button>
+          <div class="stepper-display">
+            <span id="modalHeadcount">1</span>
+            <span class="stepper-unit">Person</span>
           </div>
+          <button class="stepper-touch-btn" onclick="adjustHeadcount(1)">+</button>
         </div>
 
-        <label class="field-label">Details / Landmark (optional)</label>
-        <textarea id="modalDetailsText" maxlength="140" placeholder="e.g. 2nd floor, stairwell collapsed, need stretchers"></textarea>
+        <!-- Stacked Details / Landmark Textarea -->
+        <label class="field-label">Details / Landmark (Optional)</label>
+        <textarea id="modalDetailsText" maxlength="140" placeholder="e.g. 2nd floor, stairwell blocked, need stretchers"></textarea>
 
+        <!-- Single Primary Red Broadcast Action -->
         <button class="dispatch-sos-btn" onclick="submitSos()">BROADCAST DISTRESS SIGNAL</button>
       </div>
     </div>

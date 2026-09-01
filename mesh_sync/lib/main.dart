@@ -142,18 +142,15 @@ class _MeshHomePageState extends State<MeshHomePage> {
             Text(
               isResponder ? 'SAR Command Portal' : 'Citizen Emergency Portal',
               style: TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isResponder ? theme.colorScheme.onSurface : MeshTheme.terracottaRed,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: isResponder ? theme.colorScheme.onSurface : MeshTheme.emergencyRed,
               ),
             ),
             Text(
               '${widget.userName.isNotEmpty ? widget.userName : "User"} · ${widget.userIdentifier}',
               style: TextStyle(
-                fontFamily: 'Georgia',
                 fontSize: 11,
-                fontStyle: FontStyle.italic,
                 color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
               ),
             ),
@@ -182,7 +179,7 @@ class _MeshHomePageState extends State<MeshHomePage> {
                   visualDensity: VisualDensity.compact,
                 ),
                 onPressed: _showPeersSheet,
-                child: Text('$peers Peer${peers == 1 ? '' : 's'}', style: const TextStyle(fontFamily: 'Georgia', fontSize: 11)),
+                child: Text('$peers Peer${peers == 1 ? '' : 's'}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
               );
             },
           ),
@@ -207,22 +204,22 @@ class _MeshHomePageState extends State<MeshHomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: theme.cardTheme.color,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: MeshTheme.terracottaRed),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: MeshTheme.emergencyRed),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_off_outlined, color: MeshTheme.terracottaRed, size: 18),
+                      const Icon(Icons.location_off_outlined, color: MeshTheme.emergencyRed, size: 18),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
                           'Location services off. Nearby requires GPS to connect.',
-                          style: TextStyle(fontFamily: 'Georgia', fontSize: 12),
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
                       TextButton(
                         onPressed: service.requestPermissions,
-                        child: const Text('Enable', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, color: MeshTheme.terracottaRed)),
+                        child: const Text('Enable', style: TextStyle(fontWeight: FontWeight.w700, color: MeshTheme.emergencyRed)),
                       ),
                     ],
                   ),

@@ -53,40 +53,38 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 400),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Oversized Serif Brand Title
+                    // Brand Title
                     Text(
-                      'MeshSync',
+                      'MESHSYNC',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 34,
-                        fontWeight: FontWeight.normal,
-                        letterSpacing: -0.5,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       'Decentralized Offline Emergency Network',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Georgia',
                         fontSize: 13,
-                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.normal,
                         color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted,
                       ),
                     ),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: 28),
 
-                    // Role Selector
+                    // Role Selector Tabs
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -98,7 +96,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         children: [
                           Expanded(
                             child: _RoleTabButton(
-                              label: 'Citizen',
+                              label: 'Citizen / Victim',
                               icon: Icons.person_outline,
                               selected: _selectedRole == MeshRole.victim,
                               onTap: () => setState(() => _selectedRole = MeshRole.victim),
@@ -116,37 +114,31 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // Role Notice
+                    // Role Explanation
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: theme.cardTheme.color,
-                        border: Border(
-                          left: BorderSide(
-                            color: _selectedRole == MeshRole.victim
-                                ? MeshTheme.terracottaRed
-                                : MeshTheme.sageGreen,
-                            width: 3,
-                          ),
-                        ),
+                        border: Border.all(color: theme.dividerColor),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         _selectedRole == MeshRole.victim
                             ? 'Citizen portal: Broadcast emergency distress signals and confirm your safety with search teams.'
                             : 'Responder portal: Receive inbound victim signals, casualty counts, and coordinate rescue triage.',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
                           fontSize: 12,
                           height: 1.4,
+                          fontWeight: FontWeight.normal,
                           color: isDark ? MeshTheme.darkText : MeshTheme.lightText,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // Auth Mode Switcher (Sign In vs Sign Up)
+                    // Auth Mode Switcher (Sign In vs Register)
                     Row(
                       children: [
                         Expanded(
@@ -166,8 +158,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 'Sign In',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontFamily: 'Georgia',
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                   color: !_isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                                 ),
@@ -192,8 +183,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 'Register',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontFamily: 'Georgia',
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                   color: _isSignUp ? theme.colorScheme.onSurface : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                                 ),
@@ -203,14 +193,16 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                    // Form Fields
+                    // Form Fields (Stacked Label + Input)
+                    _FormFieldLabel(label: 'Full Name'),
+                    const SizedBox(height: 6),
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+                      style: const TextStyle(fontSize: 14),
                       decoration: const InputDecoration(
-                        labelText: 'Full Name',
+                        hintText: 'Enter your full name',
                         prefixIcon: Icon(Icons.person_outline, size: 18),
                       ),
                       validator: (val) => val == null || val.isEmpty ? 'Name required' : null,
@@ -218,32 +210,38 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 16),
 
                     if (_selectedRole == MeshRole.victim) ...[
+                      _FormFieldLabel(label: 'Mobile Number / Emergency ID'),
+                      const SizedBox(height: 6),
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                         decoration: const InputDecoration(
-                          labelText: 'Mobile Number / Emergency ID',
+                          hintText: '+91 98765 43210',
                           prefixIcon: Icon(Icons.phone_outlined, size: 18),
                         ),
                         validator: (val) => val == null || val.isEmpty ? 'Identifier required' : null,
                       ),
                     ] else ...[
+                      _FormFieldLabel(label: 'Responder Badge / Official ID'),
+                      const SizedBox(height: 6),
                       TextFormField(
                         controller: _badgeController,
-                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                         decoration: const InputDecoration(
-                          labelText: 'Responder Badge / Official ID',
+                          hintText: 'e.g. SAR-8821',
                           prefixIcon: Icon(Icons.badge_outlined, size: 18),
                         ),
                         validator: (val) => val == null || val.isEmpty ? 'Badge ID required' : null,
                       ),
                       const SizedBox(height: 16),
+                      _FormFieldLabel(label: 'SAR Unit / Squad Code'),
+                      const SizedBox(height: 6),
                       TextFormField(
                         controller: _unitController,
-                        style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                         decoration: const InputDecoration(
-                          labelText: 'SAR Unit / Squad Code (e.g. SAR-ALPHA)',
+                          hintText: 'e.g. SAR-ALPHA',
                           prefixIcon: Icon(Icons.shield_outlined, size: 18),
                         ),
                         validator: (val) => val == null || val.isEmpty ? 'Unit code required' : null,
@@ -251,38 +249,39 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
 
                     const SizedBox(height: 16),
+                    _FormFieldLabel(label: 'Security PIN / Password'),
+                    const SizedBox(height: 6),
                     TextFormField(
                       controller: _pinController,
                       obscureText: true,
-                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 14),
+                      style: const TextStyle(fontSize: 14),
                       decoration: const InputDecoration(
-                        labelText: 'Security PIN / Password',
+                        hintText: '••••',
                         prefixIcon: Icon(Icons.lock_outline, size: 18),
                       ),
                       validator: (val) => val == null || val.length < 4 ? 'Min 4 characters required' : null,
                     ),
 
-                    const SizedBox(height: 28),
-                    // Strong Primary Action Button
+                    const SizedBox(height: 24),
+                    // Action Button
                     FilledButton(
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
                         backgroundColor: _selectedRole == MeshRole.victim
-                            ? MeshTheme.terracottaRed
+                            ? MeshTheme.emergencyRed
                             : theme.colorScheme.onSurface,
                         foregroundColor: _selectedRole == MeshRole.victim
                             ? Colors.white
                             : theme.scaffoldBackgroundColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(
                         _isSignUp
                             ? (_selectedRole == MeshRole.victim ? 'Register Citizen Profile' : 'Register SAR Profile')
                             : (_selectedRole == MeshRole.victim ? 'Access Citizen Portal' : 'Access Responder Command'),
                         style: const TextStyle(
-                          fontFamily: 'Georgia',
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -293,6 +292,26 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FormFieldLabel extends StatelessWidget {
+  const _FormFieldLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? MeshTheme.darkTextMuted
+            : MeshTheme.lightTextMuted,
       ),
     );
   }
@@ -339,9 +358,8 @@ class _RoleTabButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Georgia',
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 color: selected
                     ? (isDark ? Colors.black : Colors.white)
                     : (isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),

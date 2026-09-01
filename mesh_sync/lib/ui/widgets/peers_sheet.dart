@@ -15,7 +15,7 @@ class PeersSheet extends StatelessWidget {
     final peers = app.service.peers;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,12 +28,12 @@ class PeersSheet extends StatelessWidget {
                 children: [
                   const Text(
                     'Direct Radio Peers',
-                    style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${peers.length} active node${peers.length == 1 ? '' : 's'} in peer cluster',
-                    style: TextStyle(fontFamily: 'Georgia', fontSize: 12, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
+                    style: TextStyle(fontSize: 12, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                   ),
                 ],
               ),
@@ -43,20 +43,20 @@ class PeersSheet extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           if (peers.isEmpty)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: theme.dividerColor),
               ),
               child: Text(
                 'No peer devices currently in direct radio range. Searching nearby frequencies...',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Georgia', fontSize: 13, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
+                style: TextStyle(fontSize: 13, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
               ),
             )
           else
@@ -64,15 +64,15 @@ class PeersSheet extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: peers.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final peer = peers[i];
                   final isResponder = peer.name.startsWith('R|');
                   return Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: theme.cardTheme.color,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: theme.dividerColor),
                     ),
                     child: Row(
@@ -83,28 +83,27 @@ class PeersSheet extends StatelessWidget {
                           children: [
                             Text(
                               peer.name,
-                              style: const TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Endpoint ID: ${peer.endpointId}',
-                              style: TextStyle(fontFamily: 'Georgia', fontSize: 11, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
+                              style: TextStyle(fontSize: 11, color: isDark ? MeshTheme.darkTextMuted : MeshTheme.lightTextMuted),
                             ),
                           ],
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isResponder ? MeshTheme.terracottaRed.withValues(alpha: 0.15) : theme.dividerColor,
+                            color: isResponder ? MeshTheme.emergencyRed.withValues(alpha: 0.15) : theme.dividerColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isResponder ? 'RESPONDER' : 'CITIZEN',
                             style: TextStyle(
-                              fontFamily: 'Georgia',
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isResponder ? MeshTheme.terracottaRed : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              color: isResponder ? MeshTheme.emergencyRed : theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -114,7 +113,7 @@ class PeersSheet extends StatelessWidget {
                 },
               ),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
