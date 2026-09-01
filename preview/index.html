@@ -25,12 +25,6 @@
         </div>
       </header>
 
-      <!-- App Tab Navigation -->
-      <nav class="tab-nav">
-        <button class="tab-btn active" id="tabMeshBtn" onclick="switchTab('mesh')">Emergency Mesh</button>
-        <button class="tab-btn" id="tabLogBtn" onclick="switchTab('log')">Tactical Log</button>
-      </nav>
-
       <!-- Main Scrollable Screen Content -->
       <main class="app-content">
         <!-- Status Bar Controls -->
@@ -126,16 +120,6 @@
 
           <!-- Incidents Feed -->
           <div id="responderIncidentsList" class="incident-cards-list"></div>
-        </div>
-
-        <!-- VIEW 3: TACTICAL LOG VIEW -->
-        <div id="logView" class="view-container" style="display: none;">
-          <div class="log-controls-bar">
-            <div class="search-input-box">
-              <input type="text" id="logSearchInput" placeholder="Filter logs..." oninput="renderLogs()">
-            </div>
-          </div>
-          <div class="log-terminal" id="logTerminal"></div>
         </div>
       </main>
     </div>

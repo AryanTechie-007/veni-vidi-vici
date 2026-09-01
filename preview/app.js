@@ -7,7 +7,6 @@ const state = {
   nickname: 'C|dev-K7P2',
   selectedModalCat: 'medical',
   modalHeadcount: 1,
-  activeTab: 'mesh',
   responderFilter: 'ALL',
 
   peers: [
@@ -47,16 +46,6 @@ const state = {
       hops: 2,
       acked: false
     }
-  ],
-
-  logs: [
-    { stamp: '20:45:02', text: 'I am C|dev-K7P2 (origin: 8b7f12)' },
-    { stamp: '20:45:05', text: 'location: GRANTED, bluetooth: GRANTED' },
-    { stamp: '20:45:08', text: 'started — advertising=true discovering=true' },
-    { stamp: '20:45:18', text: 'CONNECTED to C|dev-F4W9' },
-    { stamp: '20:45:22', text: 'CONNECTED to R|SAR-ALPHA' },
-    { stamp: '20:46:01', text: '<-- MSG id: 71c9df03 (TRAPPED, 3 people)' },
-    { stamp: '20:47:10', text: '<-- ACK ref: e4a8b29c' }
   ]
 };
 
@@ -77,28 +66,6 @@ function toggleTheme() {
   showToast(`Switched to ${state.isLightMode ? 'Light' : 'Dark'} Mode`);
 }
 
-function switchTab(tab) {
-  state.activeTab = tab;
-  document.getElementById('tabMeshBtn').classList.toggle('active', tab === 'mesh');
-  document.getElementById('tabLogBtn').classList.toggle('active', tab === 'log');
-
-  if (tab === 'log') {
-    document.getElementById('victimView').style.display = 'none';
-    document.getElementById('responderView').style.display = 'none';
-    document.getElementById('logView').style.display = 'flex';
-    renderLogs();
-  } else {
-    document.getElementById('logView').style.display = 'none';
-    if (state.role === 'victim') {
-      document.getElementById('victimView').style.display = 'flex';
-      document.getElementById('responderView').style.display = 'none';
-    } else {
-      document.getElementById('victimView').style.display = 'none';
-      document.getElementById('responderView').style.display = 'flex';
-    }
-  }
-}
-
 function setRole(role) {
   state.role = role;
   state.nickname = (role === 'responder' ? 'R|SAR-' : 'C|dev-') + 'K7P2';
@@ -106,16 +73,20 @@ function setRole(role) {
   document.getElementById('roleResponderBtn').classList.toggle('active', role === 'responder');
   document.getElementById('nodeNickname').textContent = state.nickname;
 
-  addLog(`role changed → ${role === 'responder' ? 'Search & Rescue' : 'Victim'}`);
-  showToast(`Role: ${role === 'responder' ? 'Search & Rescue' : 'Victim / Citizen'}`);
+  if (role === 'victim') {
+    document.getElementById('victimView').style.display = 'flex';
+    document.getElementById('responderView').style.display = 'none';
+  } else {
+    document.getElementById('victimView').style.display = 'none';
+    document.getElementById('responderView').style.display = 'flex';
+  }
 
-  if (state.activeTab === 'mesh') switchTab('mesh');
+  showToast(`Role: ${role === 'responder' ? 'Search & Rescue' : 'Victim / Citizen'}`);
   renderAll();
 }
 
 function toggleRadio() {
   state.radioRunning = !state.radioRunning;
-  addLog(state.radioRunning ? 'radio started' : 'radio stopped');
   renderRadioStatus();
   showToast(state.radioRunning ? 'Mesh radio started' : 'Mesh radio stopped');
 }
@@ -123,7 +94,6 @@ function toggleRadio() {
 function toggleGps(enable) {
   state.gpsEnabled = enable !== undefined ? enable : !state.gpsEnabled;
   document.getElementById('gpsWarningCard').style.display = state.gpsEnabled ? 'none' : 'flex';
-  addLog(state.gpsEnabled ? 'GPS turned on' : 'WARNING: GPS turned off');
 }
 
 function renderRadioStatus() {
@@ -203,8 +173,6 @@ function submitSos() {
     hops: 0
   });
 
-  addLog(`created SOS #${newId.substring(0, 6)} (${newMsg.cat.toUpperCase()}, ${newMsg.n} people)`);
-
   closeSosModal();
   renderAll();
   showToast('Distress Signal Broadcasted!');
@@ -213,7 +181,6 @@ function submitSos() {
 function markSafe(id) {
   state.myMessages = state.myMessages.filter(m => m.id !== id);
   state.incidents = state.incidents.filter(m => m.id !== id);
-  addLog(`CANCEL sent for #${id.substring(0, 6)} (SELF_RESOLVED)`);
   showToast('Marked as safe.');
   renderAll();
 }
@@ -221,7 +188,6 @@ function markSafe(id) {
 function closeIncident(id) {
   state.incidents = state.incidents.filter(m => m.id !== id);
   state.myMessages = state.myMessages.filter(m => m.id !== id);
-  addLog(`closed incident #${id.substring(0, 6)} (RESCUED)`);
   showToast('Incident closed.');
   renderAll();
 }
@@ -249,7 +215,6 @@ function renderAll() {
   renderRadioStatus();
   renderMyMessages();
   renderResponderView();
-  renderLogs();
 }
 
 function renderMyMessages() {
@@ -333,29 +298,6 @@ function renderResponderView() {
   `).join('');
 }
 
-function renderLogs() {
-  const query = (document.getElementById('logSearchInput')?.value || '').toLowerCase();
-  const terminal = document.getElementById('logTerminal');
-  if (!terminal) return;
-
-  const filtered = state.logs.filter(l => !query || l.text.toLowerCase().includes(query));
-
-  terminal.innerHTML = filtered.map(l => `
-    <div class="log-row">
-      <span class="log-stamp">${l.stamp}</span>
-      <span>${escapeHtml(l.text)}</span>
-    </div>
-  `).join('');
-}
-
-function addLog(text) {
-  const now = new Date();
-  const stamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-  state.logs.unshift({ stamp, text });
-  if (state.logs.length > 100) state.logs.pop();
-  renderLogs();
-}
-
 function simReceiveInboundSos() {
   const cats = ['medical', 'trapped', 'fire', 'supplies'];
   const cat = cats[Math.floor(Math.random() * cats.length)];
@@ -374,7 +316,6 @@ function simReceiveInboundSos() {
     acked: false
   });
 
-  addLog(`<-- Inbound SOS #${newId.substring(0, 6)} (${cat.toUpperCase()}, ${n} people)`);
   showToast(`Inbound SOS from #${origin}`);
   renderAll();
 }
@@ -382,7 +323,6 @@ function simReceiveInboundSos() {
 function simReceiveResponderAck() {
   if (state.myMessages.length === 0) return;
   state.myMessages[0].acked = true;
-  addLog(`<-- Responder ACK for #${state.myMessages[0].id.substring(0, 6)}`);
   showToast('Responder confirmed your SOS!');
   renderAll();
 }
@@ -390,12 +330,10 @@ function simReceiveResponderAck() {
 function simTogglePeer() {
   if (state.peers.length > 1) {
     const p = state.peers.pop();
-    addLog(`disconnected from ${p.name}`);
     showToast(`Disconnected from ${p.name}`);
   } else {
     const p = { endpointId: 'M2K1', name: 'C|dev-R9Q8', isResponder: false };
     state.peers.push(p);
-    addLog(`CONNECTED to ${p.name}`);
     showToast(`Paired with ${p.name}`);
   }
   renderAll();

@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 
 import 'device_identity.dart';
 import 'mesh_app.dart';
-import 'ui/log_view.dart';
 import 'ui/responder_screen.dart';
 import 'ui/theme/mesh_theme.dart';
 import 'ui/victim_screen.dart';
@@ -77,101 +76,87 @@ class _MeshHomePageState extends State<MeshHomePage> {
     final isDark = theme.brightness == Brightness.dark;
     final service = _app.service;
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: service.isRunning ? MeshTheme.safeGreen : MeshTheme.darkTextDim,
-                ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: service.isRunning ? MeshTheme.safeGreen : MeshTheme.darkTextDim,
               ),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'MESHSYNC',
-                    style: TextStyle(
-                      fontFamily: 'Arial',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  Text(
-                    'Offline Emergency Relay',
-                    style: TextStyle(
-                      fontFamily: 'Arial',
-                      fontSize: 11,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            // Dark / Light Mode Toggle Button
-            IconButton(
-              icon: Icon(
-                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                size: 20,
-              ),
-              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-              onPressed: () {
-                themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-              },
             ),
-            // Peers Button
-            ListenableBuilder(
-              listenable: service,
-              builder: (context, _) {
-                final peers = service.peers.length;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: _showPeersSheet,
-                    child: Text('$peers Peer${peers == 1 ? '' : 's'}'),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MESHSYNC',
+                  style: TextStyle(
+                    fontFamily: 'Arial',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
                   ),
-                );
-              },
+                ),
+                Text(
+                  'Offline Emergency Relay',
+                  style: TextStyle(
+                    fontFamily: 'Arial',
+                    fontSize: 11,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
           ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Emergency Mesh'),
-              Tab(text: 'Tactical Log'),
-            ],
-          ),
         ),
-        body: ListenableBuilder(
-          listenable: Listenable.merge([_app, _app.service]),
-          builder: (context, _) => TabBarView(
-            children: [
-              Column(
-                children: [
-                  _MinimalistStatusBar(app: _app),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: _app.role == MeshRole.responder
-                        ? ResponderScreen(app: _app)
-                        : VictimScreen(app: _app),
-                  ),
-                ],
-              ),
-              LogView(entries: _app.service.log),
-            ],
+        actions: [
+          // Dark / Light Mode Toggle Button
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              size: 20,
+            ),
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            onPressed: () {
+              themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
+            },
           ),
+          // Peers Button
+          ListenableBuilder(
+            listenable: service,
+            builder: (context, _) {
+              final peers = service.peers.length;
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: _showPeersSheet,
+                  child: Text('$peers Peer${peers == 1 ? '' : 's'}'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListenableBuilder(
+        listenable: Listenable.merge([_app, _app.service]),
+        builder: (context, _) => Column(
+          children: [
+            _MinimalistStatusBar(app: _app),
+            const Divider(height: 1),
+            Expanded(
+              child: _app.role == MeshRole.responder
+                  ? ResponderScreen(app: _app)
+                  : VictimScreen(app: _app),
+            ),
+          ],
         ),
       ),
     );

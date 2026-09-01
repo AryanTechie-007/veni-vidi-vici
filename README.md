@@ -28,18 +28,14 @@
 
 The user interface has been completely redesigned with a **clean minimalist aesthetic**:
 
-- **Pure Minimalism & Zero Glassmorphism**: Removed all glassmorphic cards, gradients, and heavy shadows in favor of flat, clean borders, crisp contrast, and functional layouts.
-- **Color Scheme**:
-  - **Black Background for Dark Mode**: True black (`#000000`) for OLED power savings in emergency situations.
-  - **Clean White for Light Mode**: `#FFFFFF` with high contrast.
-  - **Bold Red SOS Button**: High-visibility emergency red (`#D32F2F`) for the primary distress trigger.
-  - **Dark / Light Mode Toggle**: Instant switching between dark and light themes.
+- **Pure Minimalism & Zero Glassmorphism**: Flat, clean borders, crisp contrast, and clean layouts.
+- **Pure Red SOS Button**: Direct `#D32F2F` circular button for emergency clarity.
+- **Black Background (Dark Mode) & White Background (Light Mode)**: Pure `#000000` dark mode and `#FFFFFF` light mode with instant theme switcher.
 - **Typography**: Clean **Arial** font family used throughout the interface.
-- **Victim & Responder Views**:
-  - Direct 1-tap SOS trigger and simple emergency category presets (Medical, Trapped, Fire, Supplies).
-  - Streamlined headcount stepper and landmark note input.
-  - Clear delivery tracking (*Broadcasting* $\rightarrow$ *Relaying* $\rightarrow$ *Responder Acknowledged*).
-  - Search & Rescue incident triage dashboard with live metrics and resolution actions.
+- **Focused Emergency Screens**:
+  - **Victim / Citizen Mode**: Direct 1-tap SOS trigger, quick category presets (Medical, Trapped, Fire, Supplies), headcount selector, live delivery tracker (*Broadcasting* $\rightarrow$ *Relaying* $\rightarrow$ *Responder Acknowledged*), and "I Am Safe" resolution action.
+  - **Search & Rescue Responder Mode**: Incident triage command dashboard with live metrics, category filters, hop-distance indicators, and incident resolution.
+  - **Peers Inspector**: One-tap modal to inspect connected mesh node links.
 - **Interactive Localhost Web Simulator**: Run on `http://localhost:8000` for live browser verification.
 
 ---
