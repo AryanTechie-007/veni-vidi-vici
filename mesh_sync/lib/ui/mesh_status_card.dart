@@ -7,9 +7,12 @@ import '../mesh_app.dart';
 /// Shared because both roles need it: a responder that never starts the radio
 /// receives nothing at all.
 class MeshStatusCard extends StatelessWidget {
-  const MeshStatusCard({super.key, required this.app});
+  const MeshStatusCard({super.key, required this.app, this.onTap});
 
   final MeshApp app;
+
+  /// Opens the network view, where the relay backlog is visible.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +26,7 @@ class MeshStatusCard extends StatelessWidget {
         : theme.colorScheme.surfaceContainerHighest;
     final foreground = active ? Colors.white : theme.colorScheme.onSurface;
 
-    return Container(
+    final card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -77,6 +80,13 @@ class MeshStatusCard extends StatelessWidget {
                 ),
         ],
       ),
+    );
+
+    if (onTap == null) return card;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: card,
     );
   }
 }

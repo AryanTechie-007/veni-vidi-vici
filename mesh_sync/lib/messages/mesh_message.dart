@@ -96,15 +96,19 @@ enum Category {
 /// There is no SAFE here on purpose — marking yourself safe is terminal, and
 /// that is [CancelReason.selfResolved] via a CANCEL.
 enum UpdateStatus {
-  stillHere('STILL_HERE', 'Still here'),
-  worse('WORSE', 'Getting worse'),
-  better('BETTER', 'Getting better'),
-  moved('MOVED', 'Moved location');
+  stillHere('STILL_HERE', 'Still here', 'Still here'),
+  worse('WORSE', 'Getting worse', 'Worse'),
+  better('BETTER', 'Getting better', 'Better'),
+  moved('MOVED', 'Moved location', 'Moved');
 
-  const UpdateStatus(this.wire, this.label);
+  const UpdateStatus(this.wire, this.label, this.shortLabel);
 
   final String wire;
   final String label;
+
+  /// For the one-tap chips, where four have to fit in a tidy grid rather than
+  /// wrapping into ragged rows.
+  final String shortLabel;
 
   /// Unknown statuses decode to null rather than failing the whole packet.
   static UpdateStatus? fromWire(String? value) {

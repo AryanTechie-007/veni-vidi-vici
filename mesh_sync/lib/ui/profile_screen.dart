@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../device_identity.dart';
 import '../mesh_app.dart';
+import 'network_screen.dart';
 
-/// Account, device identity, radio controls, and the way out.
+/// Account, identity, and the way out.
+///
+/// Mesh state lives on Home and in the Network view — this page is about who
+/// you are, not what the radio is doing.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.app});
 
@@ -15,61 +20,96 @@ class ProfileScreen extends StatelessWidget {
     final responder = app.role == MeshRole.responder;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
       children: [
-        Center(
-          child: CircleAvatar(
-            radius: 40,
-            backgroundColor: responder
-                ? Colors.blue.shade100
-                : theme.colorScheme.secondaryContainer,
-            child: Icon(
-              responder
-                  ? Icons.medical_services_outlined
-                  : Icons.person_outline,
-              size: 40,
-            ),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: responder
+                    ? Colors.blue.shade100
+                    : theme.colorScheme.secondaryContainer,
+                child: Icon(
+                  responder
+                      ? Icons.medical_services_outlined
+                      : Icons.person_outline,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      app.username ?? 'Signed out',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(app.role.label, style: theme.textTheme.bodyMedium),
+                    const SizedBox(height: 6),
+                    // Shortened: the full origin is 16 hex characters and
+                    // nobody reads it, but it is the only identity there is,
+                    // so it stays copyable.
+                    InkWell(
+                      onTap: () => _copyId(context),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Device ID: ${_shortId(app.origin)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.hintColor,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(Icons.copy, size: 13, color: theme.hintColor),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 14),
-        Center(
-          child: Text(
-            app.username ?? 'Signed out',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Center(
-          child: Chip(
-            label: Text(app.role.label),
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
-        _Group(
-          title: 'Device identity',
-          children: [
-            ListTile(
-              leading: const Icon(Icons.fingerprint),
-              title: const Text('Origin'),
-              subtitle: Text(app.origin),
-            ),
-            ListTile(
-              leading: const Icon(Icons.tag),
-              title: const Text('Messages created'),
-              // seq is the message counter. It survives sign-out on purpose:
-              // ids are hash(origin + seq), so restarting it would reuse the ids
-              // of already-sent messages and the mesh would drop them.
-              subtitle: const Text('Counter is kept across sign-out'),
-              trailing: Text('${app.seq}'),
-            ),
-          ],
+        _Row(
+          icon: Icons.badge_outlined,
+          title: 'My role',
+          trailing: app.role.label,
         ),
-        const SizedBox(height: 28),
+        _Row(
+          icon: Icons.hub_outlined,
+          title: 'Network',
+          trailing: '${app.service.peers.length} peers',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => NetworkScreen(app: app)),
+          ),
+        ),
+        _Row(
+          icon: Icons.tag,
+          title: 'Messages created',
+          // seq is the message counter. It survives sign-out on purpose: ids
+          // are hash(origin + seq), so restarting it would reuse the ids of
+          // already-sent messages and the mesh would drop them as duplicates.
+          trailing: '${app.seq}',
+        ),
+        _Row(
+          icon: Icons.info_outline,
+          title: 'About MeshSync',
+          onTap: () => _showAbout(context),
+        ),
 
+        const SizedBox(height: 28),
         OutlinedButton.icon(
           onPressed: () => _confirmSignOut(context),
           icon: const Icon(Icons.logout),
@@ -89,6 +129,31 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
+
+  static String _shortId(String origin) =>
+      '${origin.substring(0, 4)}…${origin.substring(origin.length - 4)}';
+
+  Future<void> _copyId(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: app.origin));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Device ID copied')));
+  }
+
+  void _showAbout(BuildContext context) => showAboutDialog(
+    context: context,
+    applicationName: 'MeshSync',
+    applicationVersion: '1.0.0',
+    children: const [
+      Text(
+        'Sends an SOS device to device over short-range radio when there is '
+        'no network. Messages hop from phone to phone until they reach a '
+        'responder, and a phone that is simply carried from one place to '
+        'another is a valid way to move them.',
+      ),
+    ],
+  );
 
   Future<void> _confirmSignOut(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -115,27 +180,43 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _Group extends StatelessWidget {
-  const _Group({required this.title, required this.children});
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.icon,
+    required this.title,
+    this.trailing,
+    this.onTap,
+  });
 
+  final IconData icon;
   final String title;
-  final List<Widget> children;
+  final String? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(title, style: theme.textTheme.titleSmall),
-        ),
-        Card(
-          margin: EdgeInsets.zero,
-          child: Column(children: children),
-        ),
-      ],
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailing != null)
+            Text(
+              trailing!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, color: theme.hintColor),
+          ],
+        ],
+      ),
+      onTap: onTap,
     );
   }
 }

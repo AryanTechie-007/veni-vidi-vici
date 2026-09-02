@@ -223,7 +223,6 @@ class _IncidentRow extends StatelessWidget {
       ),
     );
   }
-
 }
 
 String _elapsed(int unixSeconds) {

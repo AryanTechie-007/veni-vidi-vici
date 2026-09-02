@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 
-import '../device_identity.dart';
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
+import 'category_style.dart';
+import 'incident_detail_screen.dart';
 import 'mesh_status_card.dart';
+import 'network_screen.dart';
 import 'send_sos_screen.dart';
-import 'update_sheet.dart';
 
-/// One screen for both roles: mesh status, the SOS button, and the history of
-/// everything this device holds.
+/// The victim's home.
 ///
-/// Both roles relay identically — only the emphasis differs, so this is one
-/// widget rather than two.
+/// Deliberately two different screens rather than one list. Before an alert
+/// exists the only thing that matters is sending one; afterwards the only
+/// thing that matters is whether anyone is coming. A list of rows answers
+/// neither question well.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.app});
 
@@ -21,150 +23,120 @@ class HomeScreen extends StatelessWidget {
     context,
   ).push(MaterialPageRoute(builder: (context) => SendSosScreen(app: app)));
 
+  void _openNetwork(BuildContext context) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (context) => NetworkScreen(app: app)));
+
   @override
   Widget build(BuildContext context) {
-    final responder = app.role == MeshRole.responder;
-    // A responder's own alerts are rare; a victim's are the point. Show the
-    // relevant set first, then everything else this device is carrying.
-    final primary = responder ? app.incidents : app.myMessages;
-    final secondary = responder ? app.myMessages : app.incidents;
+    final open = [
+      for (final m in app.myMessages)
+        if (app.stateOf(m.id) != IncidentState.closed) m,
+    ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        MeshStatusCard(app: app),
+        MeshStatusCard(app: app, onTap: () => _openNetwork(context)),
         const SizedBox(height: 16),
-        _SosButton(onPressed: () => _compose(context)),
-        const SizedBox(height: 24),
-        _Section(
-          title: responder ? 'Incidents received' : 'Your alerts',
-          empty: responder ? 'No incidents received' : 'Nothing sent yet',
-          messages: primary,
-          app: app,
-        ),
-        const SizedBox(height: 8),
-        _Section(
-          title: responder ? 'Your alerts' : 'Carried from others',
-          empty: responder
-              ? 'You have not sent an alert'
-              : 'Nothing received from other devices',
-          messages: secondary,
-          app: app,
-        ),
+
+        // The SOS button is always here. It shrinks once an alert is live so
+        // the status can lead, but it never moves or disappears — it is the
+        // one control someone must be able to find without looking.
+        _SosButton(onPressed: () => _compose(context), large: open.isEmpty),
+
+        if (open.isEmpty)
+          const _Explainer()
+        else ...[
+          const SizedBox(height: 16),
+          // Only the newest alert gets the full card. Stacking several is what
+          // made this unreadable.
+          _ActiveAlertCard(app: app, message: open.first),
+          for (final message in open.skip(1)) ...[
+            const SizedBox(height: 16),
+            _ActiveAlertCard(app: app, message: message),
+          ],
+        ],
       ],
     );
   }
 }
 
+/// Always on screen, in one of two sizes.
 class _SosButton extends StatelessWidget {
-  const _SosButton({required this.onPressed});
+  const _SosButton({required this.onPressed, required this.large});
 
   final VoidCallback onPressed;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return SizedBox(
-      height: 120,
+      height: large ? 180 : 74,
       child: FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: scheme.error,
           foregroundColor: scheme.onError,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(large ? 24 : 16),
           ),
         ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.sos, size: 44),
-            SizedBox(height: 6),
-            Text(
-              'Send SOS',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 2),
-            Text(
-              'Shared with every device nearby',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
+        child: large
+            ? const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sos, size: 62),
+                  SizedBox(height: 10),
+                  Text(
+                    'Send SOS',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.sos, size: 30),
+                  SizedBox(width: 12),
+                  Text(
+                    'Send another SOS',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
       ),
     );
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({
-    required this.title,
-    required this.empty,
-    required this.messages,
-    required this.app,
-  });
-
-  final String title;
-  final String empty;
-  final List<MeshMessage> messages;
-  final MeshApp app;
+class _Explainer extends StatelessWidget {
+  const _Explainer();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            children: [
-              Text(title, style: theme.textTheme.titleSmall),
-              const SizedBox(width: 6),
-              if (messages.isNotEmpty)
-                Text(
-                  '${messages.length}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        if (messages.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              empty,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.hintColor,
-              ),
-            ),
-          )
-        else
-          for (final message in messages)
-            IncidentTile(
-              message: message,
-              state: app.stateOf(message.id),
-              replies: app.repliesFor(message.id),
-              updates: app.updatesFor(message.id),
-              onUpdate:
-                  message.core.origin == app.origin &&
-                      app.stateOf(message.id) != IncidentState.closed
-                  ? () => _sendUpdate(context, message)
-                  : null,
-              peerCount: app.service.peers.length,
-              mine: message.core.origin == app.origin,
-              onClose: app.stateOf(message.id) == IncidentState.closed
-                  ? null
-                  : () => _confirmClose(context, message),
-            ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: Text(
+        'Works with no signal. Your alert hops phone to phone until it '
+        'reaches a responder.',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+      ),
     );
   }
+}
 
-  /// Posts a status update on the victim's own incident.
-  Future<void> _sendUpdate(BuildContext context, MeshMessage message) async {
+/// An alert that is still open. The status is the whole point of the card.
+class _ActiveAlertCard extends StatelessWidget {
+  const _ActiveAlertCard({required this.app, required this.message});
+
+  final MeshApp app;
+  final MeshMessage message;
+
+  Future<void> _update(BuildContext context, UpdateStatus status) async {
     final wait = app.secondsUntilNextUpdate(message.id);
     if (wait > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,40 +144,25 @@ class _Section extends StatelessWidget {
       );
       return;
     }
-
-    final request = await showModalBottomSheet<UpdateRequest>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => const UpdateSheet(),
+    final sent = await app.sendUpdate(message.id, status: status);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          sent ? 'Update sent: ${status.label}' : 'Update not sent',
+        ),
+      ),
     );
-    if (request == null) return;
-
-    final sent = await app.sendUpdate(
-      message.id,
-      status: request.status,
-      txt: request.text.isEmpty ? null : request.text,
-    );
-    if (context.mounted && !sent) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Update not sent — too soon, or closed')),
-      );
-    }
   }
 
-  /// Closing floods a CANCEL that purges the incident from every device that
-  /// receives it, so it is confirmed rather than a single tap.
-  Future<void> _confirmClose(BuildContext context, MeshMessage message) async {
-    final mine = message.core.origin == app.origin;
+  Future<void> _safe(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(mine ? 'Mark yourself safe?' : 'Close this incident?'),
-        content: Text(
-          mine
-              ? 'This tells every device in the mesh that you no longer need '
-                    'help, and removes your alert from their storage.'
-              : 'A CANCEL floods to every device in the mesh and deletes this '
-                    'incident from their storage. It cannot be undone.',
+        title: const Text('Mark yourself safe?'),
+        content: const Text(
+          'This tells every device in the mesh that you no longer need help, '
+          'and removes your alert from their storage.',
         ),
         actions: [
           TextButton(
@@ -214,185 +171,260 @@ class _Section extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(mine ? 'I am safe' : 'Close incident'),
+            child: const Text('I am safe'),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      await app.cancel(
-        message.id,
-        mine ? CancelReason.selfResolved : CancelReason.rescued,
-      );
+      await app.cancel(message.id, CancelReason.selfResolved);
     }
   }
-}
-
-/// One incident, in whichever state this device believes it to be.
-class IncidentTile extends StatelessWidget {
-  const IncidentTile({
-    super.key,
-    required this.message,
-    required this.state,
-    required this.replies,
-    required this.updates,
-    required this.peerCount,
-    required this.mine,
-    required this.onClose,
-    this.onUpdate,
-  });
-
-  final MeshMessage message;
-  final IncidentState state;
-
-  /// Written replies from responders. A device receipt says a phone got it; a
-  /// reply says a person read it, so it outranks the status line.
-  final List<ResponderReply> replies;
-
-  /// Status changes the sender posted after the original alert.
-  final List<IncidentUpdate> updates;
-  final int peerCount;
-  final bool mine;
-  final VoidCallback? onClose;
-
-  /// Null unless this is the sender's own open incident.
-  final VoidCallback? onUpdate;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final core = message.core;
-    final hops = message.env.hops;
-    final closed = state == IncidentState.closed;
+    final state = app.stateOf(message.id);
+    final replies = app.repliesFor(message.id);
+    final peers = app.service.peers.length;
+    final acked = state == IncidentState.acknowledged;
 
-    // "Reached a responder" is the only state that means anything, and it is
-    // styled unlike the rest: "relayed" guarantees nothing, and the copy must
-    // not imply delivery.
-    final (String status, Color color, IconData icon) = switch (state) {
-      IncidentState.closed => ('Closed', theme.hintColor, Icons.task_alt),
-      IncidentState.acknowledged => (
-        mine ? 'Reached a responder' : 'Acknowledged',
-        Colors.green.shade700,
-        Icons.check_circle,
-      ),
-      IncidentState.open when mine && peerCount == 0 => (
-        'Sending — no devices in range',
-        theme.hintColor,
-        Icons.radio_button_unchecked,
-      ),
-      IncidentState.open when mine => (
-        'Relayed to $peerCount nearby device${peerCount == 1 ? '' : 's'}',
-        theme.hintColor,
-        Icons.wifi_tethering,
-      ),
-      IncidentState.open => (
-        'Open',
-        Colors.orange.shade800,
-        Icons.error_outline,
-      ),
-    };
+    // "Reached a responder" is the only state that means anything. The others
+    // are worded so they cannot be mistaken for delivery.
+    final (String headline, String? detail, Color colour, IconData icon) = acked
+        ? (
+            'Reached a responder',
+            // The headline already says it; a second sentence is padding.
+            null,
+            Colors.green.shade700,
+            Icons.check_circle,
+          )
+        : peers == 0
+        ? (
+            'No devices in range',
+            'Still trying — it goes out the moment a phone comes near.',
+            theme.colorScheme.error,
+            Icons.wifi_tethering_off,
+          )
+        : (
+            'Relayed to $peers nearby device${peers == 1 ? '' : 's'}',
+            'Passed on, not yet confirmed by a responder.',
+            Colors.orange.shade800,
+            Icons.wifi_tethering,
+          );
 
-    return Opacity(
-      opacity: closed ? 0.55 : 1,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(
-          backgroundColor: _colorFor(core.cat, theme),
-          child: Text(
-            '${core.n ?? '?'}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              IncidentDetailScreen(app: app, messageId: message.id),
         ),
-        title: Row(
-          children: [
-            Flexible(
-              child: Text(
-                core.txt ?? core.cat?.wire ?? 'SOS',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  decoration: closed ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Icon(icon, size: 15, color: color),
-          ],
+      ),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: colour.withValues(alpha: 0.08),
+          border: Border.all(color: colour.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(18),
         ),
-        subtitle: Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (replies.isNotEmpty)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.reply, size: 14, color: Colors.green.shade700),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      replies.last.text,
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Icon(icon, color: colour, size: 30),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colour,
+                        ),
                       ),
+                      // Elapsed time is shown prominently so a long silence is
+                      // visible rather than ambiguous.
+                      Text(
+                        'Sent ${_elapsed(message.core.ts)}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                // The whole card opens the full history; "Full history" as a
+                // text button was too quiet to find.
+                Icon(Icons.chevron_right, color: theme.hintColor),
+              ],
+            ),
+            // Which emergency this is, so several open alerts can be told
+            // apart at a glance rather than by their timestamps.
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: categoryColor(
+                      message.core.cat,
+                      theme,
+                    ).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        categoryIcon(message.core.cat),
+                        size: 14,
+                        color: categoryColor(message.core.cat, theme),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        message.core.cat?.label ?? 'SOS',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: categoryColor(message.core.cat, theme),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (message.core.n != null) ...[
+                  const SizedBox(width: 10),
+                  Icon(Icons.groups_outlined, size: 15, color: theme.hintColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${message.core.n}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
                     ),
                   ),
                 ],
-              )
-            else
-              Text(
-                status,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: state == IncidentState.acknowledged
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-            if (updates.isNotEmpty)
-              Text(
-                'You reported: '
-                '${updates.last.status?.label ?? 'a change'}'
-                '${updates.last.text == null ? '' : ' — ${updates.last.text}'}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            Text(
-              // Elapsed time is shown throughout so a long silence is visible
-              // rather than ambiguous. hops is diagnostic only — nothing is
-              // dropped for travelling far, but it hints at distance.
-              '${_elapsed(core.ts)} · $hops hop${hops == 1 ? '' : 's'}'
-              '${mine ? '' : ' · ${core.origin.substring(0, 6)}'}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.hintColor,
-              ),
+              ],
             ),
-          ],
-        ),
-        isThreeLine: true,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onUpdate != null)
-              TextButton(onPressed: onUpdate, child: const Text('Update')),
-            if (onClose != null)
-              TextButton(
-                onPressed: onClose,
-                child: Text(mine ? 'I am safe' : 'Close'),
+            if (message.core.txt != null) ...[
+              const SizedBox(height: 8),
+              Text(message.core.txt!, style: theme.textTheme.bodyLarge),
+            ],
+            if (detail != null) ...[
+              const SizedBox(height: 10),
+              Text(detail, style: theme.textTheme.bodyMedium),
+            ],
+
+            if (replies.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.reply,
+                          size: 15,
+                          color: Colors.green.shade700,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Responder said',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(replies.last.text, style: theme.textTheme.bodyLarge),
+                  ],
+                ),
               ),
+            ],
+
+            ...[
+              const Divider(height: 28),
+              Text(
+                'Tell them how you are',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // One tap, on the card. Someone one-handed under rubble is not
+              // going to work through a button, a sheet and a chip.
+              // A fixed 2x2 grid rather than a Wrap: four chips of differing
+              // widths wrapped into three ragged rows, which was most of the
+              // clutter on this card.
+              for (var row = 0; row < 2; row++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      for (final status
+                          in UpdateStatus.values.skip(row * 2).take(2))
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: status == UpdateStatus.values[row * 2]
+                                  ? 8
+                                  : 0,
+                            ),
+                            child: OutlinedButton.icon(
+                              onPressed: () => _update(context, status),
+                              icon: Icon(_iconFor(status), size: 16),
+                              label: Text(status.shortLabel),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 6),
+              // Marking yourself safe ends the incident everywhere, so it gets a
+              // real button rather than a low-contrast bit of text in a corner.
+              OutlinedButton.icon(
+                onPressed: () => _safe(context),
+                icon: const Icon(Icons.check_circle_outline),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  foregroundColor: Colors.green.shade800,
+                  side: BorderSide(color: Colors.green.shade600),
+                ),
+                label: const Text(
+                  'I am safe',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  static Color _colorFor(Category? cat, ThemeData theme) => switch (cat) {
-    Category.medical => Colors.red.shade300,
-    Category.trapped => Colors.orange.shade300,
-    Category.fire => Colors.deepOrange.shade300,
-    Category.supplies => Colors.blue.shade300,
-    Category.safe => Colors.green.shade300,
-    null => theme.disabledColor,
+  static IconData _iconFor(UpdateStatus status) => switch (status) {
+    UpdateStatus.stillHere => Icons.hourglass_empty,
+    UpdateStatus.worse => Icons.trending_down,
+    UpdateStatus.better => Icons.trending_up,
+    UpdateStatus.moved => Icons.directions_walk,
   };
 }
 

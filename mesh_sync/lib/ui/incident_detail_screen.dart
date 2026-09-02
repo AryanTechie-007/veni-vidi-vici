@@ -5,6 +5,7 @@ import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
 import 'address_text.dart';
 import 'category_style.dart';
+import 'update_sheet.dart';
 
 /// One incident in full, with the actions a responder can take on it.
 class IncidentDetailScreen extends StatelessWidget {
@@ -51,25 +52,13 @@ class _Detail extends StatelessWidget {
     final updates = app.updatesFor(message.id);
     final replies = app.repliesFor(message.id);
     final latest = updates.isEmpty ? null : updates.last;
+    final mine = core.origin == app.origin;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('SOS ${core.id.substring(0, 6)}'),
         centerTitle: true,
-        actions: [
-          Center(child: _StateChip(state: state)),
-          // Closing is destructive and rare, so it lives behind the menu
-          // rather than competing with the primary action.
-          PopupMenuButton<void>(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: state != IncidentState.closed,
-                onTap: () => _confirmClose(context),
-                child: const Text('Close incident'),
-              ),
-            ],
-          ),
-        ],
+        actions: [Center(child: _StateChip(state: state))],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -102,22 +91,43 @@ class _Detail extends StatelessWidget {
       // inside a SafeArea so the gesture bar does not sit on top of it.
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: FilledButton.icon(
-          // A responder device already ACKs on receipt, so the useful action
-          // here is a written reply: a person saying they have read it, which
-          // a device receipt cannot mean.
-          onPressed: state == IncidentState.closed
-              ? null
-              : () => _reply(context),
-          icon: const Icon(Icons.reply),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.green.shade700,
-            minimumSize: const Size.fromHeight(54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Whose incident it is decides what the actions are: the sender
+            // revises their own situation and marks themselves safe; everyone
+            // else replies and closes. A responder device already ACKs on
+            // receipt, so a written reply is the useful act — a person saying
+            // they have read it, which a device receipt cannot mean.
+            FilledButton.icon(
+              onPressed: state == IncidentState.closed
+                  ? null
+                  : () => mine ? _postUpdate(context) : _reply(context),
+              icon: Icon(mine ? Icons.autorenew : Icons.reply),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green.shade700,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              label: Text(mine ? 'Post an update' : 'Reply'),
             ),
-          ),
-          label: const Text('Reply'),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: state == IncidentState.closed
+                  ? null
+                  : () => _confirmClose(context),
+              icon: const Icon(Icons.check_circle_outline),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              label: Text(mine ? 'I am safe' : 'Close incident'),
+            ),
+          ],
         ),
       ),
     );
@@ -137,6 +147,30 @@ class _Detail extends StatelessWidget {
     }
   }
 
+  /// The sender revising their own situation, with optional text. The
+  /// one-tap chips on the home card cover the common case; this is the longer
+  /// form.
+  Future<void> _postUpdate(BuildContext context) async {
+    final wait = app.secondsUntilNextUpdate(message.id);
+    if (wait > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can update again in ${wait}s')),
+      );
+      return;
+    }
+    final request = await showModalBottomSheet<UpdateRequest>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const UpdateSheet(),
+    );
+    if (request == null) return;
+    await app.sendUpdate(
+      message.id,
+      status: request.status,
+      txt: request.text.isEmpty ? null : request.text,
+    );
+  }
+
   /// Sends a written acknowledgement. Travels as an ordinary ACK.
   Future<void> _reply(BuildContext context) async {
     final text = await showModalBottomSheet<String>(
@@ -154,7 +188,11 @@ class _Detail extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Close this incident?'),
+        title: Text(
+          message.core.origin == app.origin
+              ? 'Mark yourself safe?'
+              : 'Close this incident?',
+        ),
         content: const Text(
           'A CANCEL floods to every device in the mesh and deletes this '
           'incident from their storage. It cannot be undone.',
@@ -172,7 +210,12 @@ class _Detail extends StatelessWidget {
       ),
     );
     if (confirmed == true) {
-      await app.cancel(message.id, CancelReason.rescued);
+      await app.cancel(
+        message.id,
+        message.core.origin == app.origin
+            ? CancelReason.selfResolved
+            : CancelReason.rescued,
+      );
     }
   }
 }

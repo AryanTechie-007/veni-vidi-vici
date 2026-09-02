@@ -128,6 +128,17 @@ class MeshApp extends ChangeNotifier {
       if (m.core.type == MessageType.sos && m.core.origin != origin) m,
   ];
 
+  /// Everything this device is holding on behalf of other people — the
+  /// store-and-forward backlog, of every type.
+  ///
+  /// This is the only place the courier mechanism is visible: each of these
+  /// arrived from a stranger and will be handed to the next device this one
+  /// meets.
+  List<MeshMessage> get carriedForOthers => [
+    for (final m in _messages)
+      if (m.core.origin != origin) m,
+  ];
+
   /// SOS messages this device sent itself.
   List<MeshMessage> get myMessages => [
     for (final m in _messages)
