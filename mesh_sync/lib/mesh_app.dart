@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart' hide Category;
 
 import 'auth.dart';
 import 'device_identity.dart';
+import 'location_service.dart';
 import 'mesh_service.dart';
 import 'messages/mesh_message.dart';
 import 'messages/mesh_router.dart';
@@ -101,6 +102,8 @@ class MeshApp extends ChangeNotifier {
   }
 
   final DeviceIdentity _identity;
+
+  final LocationService location = const LocationService();
   final MeshService service;
   final MessageStore store;
   final MeshRouter router;
@@ -286,7 +289,8 @@ class MeshApp extends ChangeNotifier {
     required Category cat,
     required int n,
     String? txt,
-  }) => router.createSos(cat: cat, n: n, txt: txt);
+    GeoPoint? loc,
+  }) => router.createSos(cat: cat, n: n, txt: txt, loc: loc);
 
   @override
   void dispose() {

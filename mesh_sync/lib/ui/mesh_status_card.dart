@@ -60,8 +60,21 @@ class MeshStatusCard extends StatelessWidget {
               ],
             ),
           ),
-          if (!active)
-            FilledButton(onPressed: service.start, child: const Text('Start')),
+          // Stopping matters as much as starting: the radio is the main
+          // battery cost, and a user may want it off deliberately.
+          active
+              ? OutlinedButton(
+                  onPressed: service.stop,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: foreground,
+                    side: BorderSide(color: foreground.withValues(alpha: 0.6)),
+                  ),
+                  child: const Text('Stop'),
+                )
+              : FilledButton(
+                  onPressed: service.start,
+                  child: const Text('Start'),
+                ),
         ],
       ),
     );

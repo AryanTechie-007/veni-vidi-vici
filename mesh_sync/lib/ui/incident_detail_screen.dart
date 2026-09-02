@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
 
-/// One incident in full, with the two actions a responder can take on it.
+/// One incident in full, with the actions a responder can take on it.
 class IncidentDetailScreen extends StatelessWidget {
   const IncidentDetailScreen({
     super.key,
@@ -45,15 +46,26 @@ class _Detail extends StatelessWidget {
     final theme = Theme.of(context);
     final core = message.core;
     final state = app.stateOf(message.id);
-    final closed = state == IncidentState.closed;
+    final loc = core.loc;
+    final updates = app.updatesFor(message.id);
+    final replies = app.repliesFor(message.id);
 
     return Scaffold(
       appBar: AppBar(
         title: Text('SOS ${core.id.substring(0, 6)}'),
+        centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(child: _StateChip(state: state)),
+          Center(child: _StateChip(state: state)),
+          // Closing is destructive and rare, so it lives behind the menu
+          // rather than competing with the two primary actions.
+          PopupMenuButton<void>(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: state != IncidentState.closed,
+                onTap: () => _confirmClose(context),
+                child: const Text('Close incident'),
+              ),
+            ],
           ),
         ],
       ),
@@ -63,30 +75,19 @@ class _Detail extends StatelessWidget {
           _Card(
             children: [
               _Row(
-                icon: Icons.category_outlined,
-                label: core.cat?.wire ?? 'UNKNOWN',
+                icon: Icons.access_time,
+                label: core.cat?.label ?? 'Unknown',
                 trailing: _elapsed(core.ts),
               ),
-              const Divider(height: 20),
+              const SizedBox(height: 14),
               _Row(
                 icon: Icons.place_outlined,
-                label: core.loc == null
+                label: loc == null
                     ? 'No location attached'
-                    : '${core.loc!.lat.toStringAsFixed(4)}, '
-                          '${core.loc!.lon.toStringAsFixed(4)}',
-                trailing: core.loc?.acc == null
-                    ? null
-                    : '±${core.loc!.acc!.round()} m',
-              ),
-              const Divider(height: 20),
-              _Row(
-                icon: Icons.route_outlined,
-                label:
-                    '${message.env.hops} hop'
-                    '${message.env.hops == 1 ? '' : 's'} away',
-                // hops is diagnostic only — nothing is dropped for travelling
-                // far, but it hints at how distant the sender is.
-                trailing: 'relay depth',
+                    : '${loc.lat.toStringAsFixed(4)}, '
+                          '${loc.lon.toStringAsFixed(4)}',
+                trailing: loc == null ? null : 'View on Map',
+                onTrailingTap: loc == null ? null : () => _openMap(loc),
               ),
             ],
           ),
@@ -94,99 +95,113 @@ class _Detail extends StatelessWidget {
 
           _Card(
             children: [
-              Text('Details', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
+              Text(
+                'Details',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
               Text(
                 core.txt ?? 'No description given',
                 style: core.txt == null
-                    ? theme.textTheme.bodyMedium?.copyWith(
+                    ? theme.textTheme.bodyLarge?.copyWith(
                         color: theme.hintColor,
                       )
                     : theme.textTheme.bodyLarge,
               ),
-              const Divider(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: _Stat(
-                      label: 'People affected',
-                      value: '${core.n ?? '—'}',
+              const Divider(height: 28),
+              IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _Stat(
+                        label: 'People Affected',
+                        value: '${core.n ?? '—'}',
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: _Stat(label: 'Status', value: _stateLabel(state)),
-                  ),
-                ],
+                    const VerticalDivider(width: 1),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _Stat(label: 'Status', value: _stateLabel(state)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          _Card(
+          if (updates.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _UpdatesCard(updates: updates),
+          ],
+          if (replies.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _RepliesCard(replies: replies),
+          ],
+
+          const SizedBox(height: 28),
+          Row(
             children: [
-              Text('Sender', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
-              // Until the responder directory is pre-cached, a UID is all there
-              // is — there is no name to resolve it to offline.
-              SelectableText(core.origin, style: theme.textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(
-                'Message ${core.id} · seq ${core.seq}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.hintColor,
+              Expanded(
+                child: FilledButton.icon(
+                  // A responder device already ACKs on receipt, so the useful
+                  // action here is a written reply: a person saying they have
+                  // read it, which a device receipt cannot mean.
+                  onPressed: state == IncidentState.closed
+                      ? null
+                      : () => _reply(context),
+                  icon: const Icon(Icons.check),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green.shade700,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: const Text('Reply'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: loc == null ? null : () => _openMap(loc),
+                  icon: const Icon(Icons.navigation),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: const Text('Navigate'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          _UpdatesCard(updates: app.updatesFor(message.id)),
-          const SizedBox(height: 16),
-
-          _RepliesCard(replies: app.repliesFor(message.id)),
-          const SizedBox(height: 24),
-
-          if (closed)
-            const _ClosedNotice()
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    // A responder device has already ACKed on receipt, so the
-                    // useful action here is a written reply: a person saying
-                    // they have read it, which a device receipt cannot mean.
-                    onPressed: () => _reply(context),
-                    icon: const Icon(Icons.reply),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
-                      minimumSize: const Size.fromHeight(52),
-                    ),
-                    label: const Text('Reply'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _confirmClose(context),
-                    icon: const Icon(Icons.task_alt),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                    ),
-                    label: const Text('Close'),
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
     );
   }
 
-  /// Sends a written acknowledgement.
+  /// Hands the coordinates to whatever maps app is installed.
   ///
-  /// Travels as an ordinary ACK, so it also marks the incident acknowledged
-  /// for any device that has not seen the automatic one.
+  /// This is the one place the app wants the internet, and it is also the one
+  /// place it does not matter: a responder either has coverage here or does
+  /// not, and the incident is readable either way.
+  Future<void> _openMap(GeoPoint loc) async {
+    final uri = Uri.parse('geo:${loc.lat},${loc.lon}?q=${loc.lat},${loc.lon}');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      await launchUrl(
+        Uri.parse(
+          'https://www.google.com/maps/search/?api=1'
+          '&query=${loc.lat},${loc.lon}',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
+  /// Sends a written acknowledgement. Travels as an ordinary ACK.
   Future<void> _reply(BuildContext context) async {
     final text = await showModalBottomSheet<String>(
       context: context,
@@ -236,50 +251,45 @@ class _UpdatesCard extends StatelessWidget {
     final theme = Theme.of(context);
     return _Card(
       children: [
-        Text('Sender updates', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        if (updates.isEmpty)
-          Text(
-            'Nothing since the original alert.',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-          )
-        else
-          // Newest first: the current situation matters more than the history.
-          for (final update in updates.reversed)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    _iconFor(update.status),
-                    size: 18,
-                    color: theme.hintColor,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          update.status?.label ?? 'Unrecognised status',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+        Text(
+          'Sender updates',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Newest first: the current situation matters more than the history.
+        for (final update in updates.reversed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(_iconFor(update.status), size: 18, color: theme.hintColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        update.status?.label ?? 'Unrecognised status',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        if (update.text != null) Text(update.text!),
-                        Text(
-                          _elapsed(update.ts),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.hintColor,
-                          ),
+                      ),
+                      if (update.text != null) Text(update.text!),
+                      Text(
+                        _elapsed(update.ts),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.hintColor,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
       ],
     );
   }
@@ -303,31 +313,29 @@ class _RepliesCard extends StatelessWidget {
     final theme = Theme.of(context);
     return _Card(
       children: [
-        Text('Responder replies', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        if (replies.isEmpty)
-          Text(
-            'No written reply yet. The automatic acknowledgement only means a '
-            'responder device received this.',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-          )
-        else
-          for (final reply in replies)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(reply.text, style: theme.textTheme.bodyLarge),
-                  Text(
-                    '${reply.from.substring(0, 6)} · ${_elapsed(reply.ts)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.hintColor,
-                    ),
+        Text(
+          'Responder replies',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        for (final reply in replies)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(reply.text, style: theme.textTheme.bodyLarge),
+                Text(
+                  _elapsed(reply.ts),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
       ],
     );
   }
@@ -397,35 +405,6 @@ class _ReplySheetState extends State<_ReplySheet> {
   }
 }
 
-class _ClosedNotice extends StatelessWidget {
-  const _ClosedNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.task_alt, color: theme.hintColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Closed. This device kept a record, but the incident was purged '
-              'from the mesh and will not be accepted again.',
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _StateChip extends StatelessWidget {
   const _StateChip({required this.state});
 
@@ -485,11 +464,17 @@ class _Card extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.icon, required this.label, this.trailing});
+  const _Row({
+    required this.icon,
+    required this.label,
+    this.trailing,
+    this.onTrailingTap,
+  });
 
   final IconData icon;
   final String label;
   final String? trailing;
+  final VoidCallback? onTrailingTap;
 
   @override
   Widget build(BuildContext context) {
@@ -498,12 +483,16 @@ class _Row extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: theme.hintColor),
         const SizedBox(width: 12),
-        Expanded(child: Text(label)),
+        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
         if (trailing != null)
-          Text(
-            trailing!,
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-          ),
+          onTrailingTap == null
+              ? Text(
+                  trailing!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                )
+              : TextButton(onPressed: onTrailingTap, child: Text(trailing!)),
       ],
     );
   }
@@ -523,9 +512,11 @@ class _Stat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(value, style: theme.textTheme.headlineSmall),
       ],
     );

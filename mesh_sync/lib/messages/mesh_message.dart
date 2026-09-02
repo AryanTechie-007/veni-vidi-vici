@@ -64,15 +64,18 @@ enum MessageType {
 }
 
 enum Category {
-  medical('MEDICAL'),
-  trapped('TRAPPED'),
-  fire('FIRE'),
-  supplies('SUPPLIES'),
-  safe('SAFE');
+  medical('MEDICAL', 'Medical'),
+  trapped('TRAPPED', 'Rescue'),
+  fire('FIRE', 'Fire'),
+  supplies('SUPPLIES', 'Supplies'),
+  safe('SAFE', 'Safe');
 
-  const Category(this.wire);
+  const Category(this.wire, this.label);
 
   final String wire;
+
+  /// What a person sees. [wire] stays the spec's value and never changes.
+  final String label;
 
   /// Unknown categories decode to null rather than failing the whole packet.
   static Category? fromWire(String? value) {

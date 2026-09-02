@@ -4,7 +4,7 @@ import '../device_identity.dart';
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
 import 'mesh_status_card.dart';
-import 'sos_sheet.dart';
+import 'send_sos_screen.dart';
 import 'update_sheet.dart';
 
 /// One screen for both roles: mesh status, the SOS button, and the history of
@@ -17,25 +17,9 @@ class HomeScreen extends StatelessWidget {
 
   final MeshApp app;
 
-  Future<void> _compose(BuildContext context) async {
-    final request = await showModalBottomSheet<SosRequest>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => const SosSheet(),
-    );
-    if (request == null) return;
-
-    final message = await app.sendSos(
-      cat: request.cat,
-      n: request.headcount,
-      txt: request.text.isEmpty ? null : request.text,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('SOS ${message.id} created')));
-    }
-  }
+  Future<void> _compose(BuildContext context) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (context) => SendSosScreen(app: app)));
 
   @override
   Widget build(BuildContext context) {
