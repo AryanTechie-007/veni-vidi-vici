@@ -21,6 +21,7 @@ enum MeshRole {
 const String _kOrigin = 'mesh.origin';
 const String _kSeq = 'mesh.seq';
 const String _kRole = 'mesh.role';
+const String _kUsername = 'mesh.username';
 
 /// Persisted device identity.
 ///
@@ -29,7 +30,8 @@ const String _kRole = 'mesh.role';
 /// regenerated ids collide with old ones and real messages are silently
 /// dropped as duplicates — with no error surfaced anywhere.
 class DeviceIdentity {
-  DeviceIdentity._(this._prefs, this.origin, this._role, this._seq);
+  DeviceIdentity._(
+      this._prefs, this.origin, this._role, this._seq, this._username);
 
   final SharedPreferences _prefs;
 
@@ -38,9 +40,13 @@ class DeviceIdentity {
 
   int _seq;
   MeshRole _role;
+  String? _username;
 
   int get seq => _seq;
   MeshRole get role => _role;
+
+  /// Null when signed out.
+  String? get username => _username;
 
   static Future<DeviceIdentity> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +65,7 @@ class DeviceIdentity {
         orElse: () => MeshRole.victim,
       ),
       prefs.getInt(_kSeq) ?? 0,
+      prefs.getString(_kUsername),
     );
   }
 
@@ -72,6 +79,22 @@ class DeviceIdentity {
   Future<void> saveRole(MeshRole value) async {
     _role = value;
     await _prefs.setString(_kRole, value.name);
+  }
+
+  Future<void> signIn(String username, MeshRole role) async {
+    _username = username;
+    await _prefs.setString(_kUsername, username);
+    await saveRole(role);
+  }
+
+  /// Clears the session only.
+  ///
+  /// [origin] and [seq] are deliberately left alone: they are this device's
+  /// message identity, and resetting the counter would make new messages reuse
+  /// the ids of old ones, which the mesh would silently drop as duplicates.
+  Future<void> signOut() async {
+    _username = null;
+    await _prefs.remove(_kUsername);
   }
 
   static String _mintOrigin() {

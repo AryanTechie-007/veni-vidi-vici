@@ -1,15 +1,20 @@
 // MeshSync — offline SOS relay over Google Nearby Connections, P2P_CLUSTER.
 //
-// This file is UI only. The radio lives in mesh_service.dart, the propagation
-// rules in messages/mesh_router.dart, and mesh_app.dart wires them together.
+// This file is the shell only: the sign-in gate and the two tabs. The radio
+// lives in mesh_service.dart, the propagation rules in messages/mesh_router.dart,
+// and mesh_app.dart wires them together.
 
 import 'package:flutter/material.dart';
 
-import 'device_identity.dart';
+import 'auth.dart';
 import 'mesh_app.dart';
-import 'ui/log_view.dart';
+import 'mesh_service.dart';
+import 'device_identity.dart';
+import 'ui/home_screen.dart';
+import 'ui/login_screen.dart';
+import 'ui/mesh_fault_ui.dart';
+import 'ui/profile_screen.dart';
 import 'ui/responder_screen.dart';
-import 'ui/victim_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,21 +24,93 @@ Future<void> main() async {
   runApp(MeshSyncApp(app: app));
 }
 
-class MeshSyncApp extends StatelessWidget {
+class MeshSyncApp extends StatefulWidget {
   const MeshSyncApp({super.key, required this.app});
 
   final MeshApp app;
 
   @override
+  State<MeshSyncApp> createState() => _MeshSyncAppState();
+}
+
+class _MeshSyncAppState extends State<MeshSyncApp> {
+  MeshApp get _app => widget.app;
+
+  final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
+
+  /// The fault the dialog last reported, so a rebuild does not raise it again.
+  MeshFault? _reportedFault;
+
+  @override
+  void initState() {
+    super.initState();
+    _app.service.addListener(_onServiceChanged);
+    // A returning user is already signed in, so the mesh should come up on
+    // launch without waiting for a tap. Deferred a frame so a fault can raise
+    // its dialog against a mounted navigator.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_app.isSignedIn) _startMesh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _app.service.removeListener(_onServiceChanged);
+    _app.dispose();
+    super.dispose();
+  }
+
+  /// Raises the dialog once per fault, from wherever the failure came from —
+  /// launch, sign-in, or the Start button.
+  void _onServiceChanged() {
+    final fault = _app.service.fault;
+    if (fault == MeshFault.none) {
+      _reportedFault = null;
+      return;
+    }
+    if (fault == _reportedFault) return;
+    _reportedFault = fault;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _navigator.currentContext;
+      if (context == null || !context.mounted) return;
+      showMeshFaultDialog(context, _app.service);
+    });
+  }
+
+  /// Brings the radio up. Nothing can be sent or relayed until it is.
+  ///
+  /// If permissions were refused, requestPermissions has already recorded the
+  /// reason; starting anyway would fail and overwrite it with a vaguer one.
+  Future<void> _startMesh() async {
+    if (await _app.service.requestPermissions()) {
+      await _app.service.start();
+    }
+  }
+
+  Future<void> _signIn(Account account) async {
+    await _app.signIn(account);
+    await _startMesh();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MeshSync',
+      navigatorKey: _navigator,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
         useMaterial3: true,
       ),
-      home: MeshHomePage(app: app),
+      home: ListenableBuilder(
+        // One builder covers both notifiers: the coordinator for messages,
+        // role and session; the service for connection state.
+        listenable: Listenable.merge([_app, _app.service]),
+        builder: (context, _) => _app.isSignedIn
+            ? MeshHomePage(app: _app)
+            : LoginScreen(onSignedIn: _signIn),
+      ),
     );
   }
 }
@@ -48,149 +125,41 @@ class MeshHomePage extends StatefulWidget {
 }
 
 class _MeshHomePageState extends State<MeshHomePage> {
-  MeshApp get _app => widget.app;
-
-  @override
-  void dispose() {
-    _app.dispose();
-    super.dispose();
-  }
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('MeshSync'),
-          backgroundColor: theme.colorScheme.inversePrimary,
-          bottom: const TabBar(
-            tabs: [Tab(text: 'Mesh'), Tab(text: 'Log')],
-          ),
-        ),
-        // One builder covers both notifiers: the coordinator for messages and
-        // role, the service for connection and log changes.
-        body: ListenableBuilder(
-          listenable: Listenable.merge([_app, _app.service]),
-          builder: (context, _) => TabBarView(
-            children: [
-              Column(
-                children: [
-                  _StatusBar(app: _app),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: _app.role == MeshRole.responder
-                        ? ResponderScreen(app: _app)
-                        : VictimScreen(app: _app),
-                  ),
-                ],
-              ),
-              LogView(entries: _app.service.log),
-            ],
-          ),
-        ),
+    final app = widget.app;
+    final responder = app.role == MeshRole.responder;
+
+    // Home is the incident dashboard for a responder and the SOS screen for a
+    // victim — the same tab, a different job.
+    final pages = <Widget>[
+      responder ? ResponderScreen(app: app) : HomeScreen(app: app),
+      ProfileScreen(app: app),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(responder ? 'Responder' : 'MeshSync'),
+        centerTitle: true,
       ),
-    );
-  }
-}
-
-class _StatusBar extends StatelessWidget {
-  const _StatusBar({required this.app});
-
-  final MeshApp app;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final service = app.service;
-    final peers = service.peers.length;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SegmentedButton<MeshRole>(
-            segments: const [
-              ButtonSegment(
-                value: MeshRole.victim,
-                label: Text('Victim'),
-                icon: Icon(Icons.person_outline),
-              ),
-              ButtonSegment(
-                value: MeshRole.responder,
-                label: Text('Responder'),
-                icon: Icon(Icons.medical_services_outlined),
-              ),
-            ],
-            selected: {app.role},
-            onSelectionChanged: (selection) => app.setRole(selection.first),
+      body: SafeArea(child: pages[_tab]),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (index) => setState(() => _tab = index),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _StatusDot(active: service.isRunning),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${service.nickname}'
-                  ' · ${service.isRunning ? 'advertising + discovering' : 'idle'}'
-                  ' · $peers peer${peers == 1 ? '' : 's'}'
-                  '${service.pendingCount == 0 ? '' : ' · ${service.pendingCount} pending'}',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            ],
-          ),
-          if (!service.gpsEnabled)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 10),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Location services are off. Nearby will connect unreliably or '
-                'not at all until you turn GPS on.',
-                style: TextStyle(color: theme.colorScheme.onErrorContainer),
-              ),
-            ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              OutlinedButton(
-                onPressed: service.requestPermissions,
-                child: const Text('Permissions'),
-              ),
-              const SizedBox(width: 10),
-              FilledButton(
-                onPressed: service.isRunning ? service.stop : service.start,
-                child: Text(service.isRunning ? 'Stop' : 'Start mesh'),
-              ),
-            ],
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: active ? Colors.green : Colors.grey,
       ),
     );
   }

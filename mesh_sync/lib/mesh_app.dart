@@ -9,11 +9,26 @@ import 'dart:async';
 // the message category enum.
 import 'package:flutter/foundation.dart' hide Category;
 
+import 'auth.dart';
 import 'device_identity.dart';
 import 'mesh_service.dart';
 import 'messages/mesh_message.dart';
 import 'messages/mesh_router.dart';
 import 'messages/message_store.dart';
+
+/// The lifecycle of one incident, as this device understands it.
+enum IncidentState {
+  /// Nobody has acknowledged it yet.
+  open,
+
+  /// A responder confirmed receipt. The SOS stops being relayed but stays
+  /// stored, so a responder arriving later still sees the record.
+  acknowledged,
+
+  /// Closed by a CANCEL. Purged from the message store and refused from peers;
+  /// kept here only so this device can still show what it closed.
+  closed,
+}
 
 /// How often expired messages and seen entries are swept.
 const Duration kPruneInterval = Duration(minutes: 5);
@@ -66,6 +81,9 @@ class MeshApp extends ChangeNotifier {
   final List<MeshMessage> _messages = [];
 
   String get origin => _identity.origin;
+
+  /// Messages this device has created. Survives sign-out on purpose.
+  int get seq => _identity.seq;
   MeshRole get role => _identity.role;
 
   /// SOS messages from other devices — the responder's incident list.
@@ -80,16 +98,47 @@ class MeshApp extends ChangeNotifier {
           if (m.core.origin == origin && m.core.type == MessageType.sos) m,
       ];
 
+  /// Looked up by id rather than held by value: a CANCEL can purge a message
+  /// while a detail page is open on it.
+  MeshMessage? messageById(String id) {
+    for (final m in _messages) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
   void _record(MeshMessage message) {
     _messages.insert(0, message);
     if (message.core.type == MessageType.ack && message.core.ref != null) {
       _ackedIds.add(message.core.ref!);
     }
     if (message.core.type == MessageType.cancel && message.core.ref != null) {
-      // A cancelled incident is purged from the store, so drop it from the
-      // view too rather than showing a record nothing holds any more.
-      _messages.removeWhere((m) => m.id == message.core.ref);
+      // The store purges it and refuses it from peers, exactly as the spec
+      // says. This list is a local archive kept only so the operator can see
+      // what they closed — it never changes what goes over the radio.
+      _closedIds.add(message.core.ref!);
     }
+    notifyListeners();
+  }
+
+  String? get username => _identity.username;
+
+  bool get isSignedIn => _identity.username != null;
+
+  Future<void> signIn(Account account) async {
+    await _identity.signIn(account.username, account.role);
+    router.isResponder = account.role == MeshRole.responder;
+    await service.setRole(account.role);
+    notifyListeners();
+  }
+
+  /// Ends the session and takes the radio down with it.
+  ///
+  /// Held messages stay in the store: this device may still be carrying a
+  /// stranger's SOS, and signing out is no reason to drop it.
+  Future<void> signOut() async {
+    await service.stop();
+    await _identity.signOut();
     notifyListeners();
   }
 
@@ -107,7 +156,27 @@ class MeshApp extends ChangeNotifier {
   /// store by [MeshRouter.onReferencedChanged].
   bool isAcked(String sosId) => _ackedIds.contains(sosId);
 
+  bool isClosed(String sosId) => _closedIds.contains(sosId);
+
+  /// Closed outranks acknowledged: an incident that was acked and then closed
+  /// reads as closed.
+  IncidentState stateOf(String sosId) {
+    if (_closedIds.contains(sosId)) return IncidentState.closed;
+    if (_ackedIds.contains(sosId)) return IncidentState.acknowledged;
+    return IncidentState.open;
+  }
+
   final Set<String> _ackedIds = {};
+  final Set<String> _closedIds = {};
+
+  /// Acknowledges an incident by hand.
+  ///
+  /// A responder device already ACKs on receipt, so this only matters for an
+  /// incident that arrived while this device was not yet a responder.
+  Future<void> acknowledge(String sosId) async {
+    await router.sendAck(sosId);
+    notifyListeners();
+  }
 
   /// Closes an incident and floods the CANCEL.
   Future<void> cancel(String sosId, CancelReason reason) async {

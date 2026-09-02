@@ -23,7 +23,43 @@ const String kServiceId = 'com.meshsync.mesh_sync';
 /// forms a graph rather than a hub-and-spoke.
 const Strategy kStrategy = Strategy.P2P_CLUSTER;
 
-const int _maxLogEntries = 300;
+/// Why the mesh is not running, in terms a user can act on.
+enum MeshFault {
+  none('', null),
+
+  /// Asked and refused, but askable again.
+  permissionsDenied(
+    'Nearby needs Bluetooth and location permission to find other devices.',
+    'Grant',
+  ),
+
+  /// Refused with "don't ask again" — only Android settings can undo it.
+  permissionsBlocked(
+    'Permissions are blocked. Turn them on in Android settings, then start '
+    'the mesh again.',
+    'Open settings',
+  ),
+
+  /// Holding the permission is not the same as having the GPS toggle on, and
+  /// Nearby cannot scan without it.
+  locationOff(
+    'Turn on location services. Nearby cannot scan for devices without them, '
+    'even with permission granted.',
+    null,
+  ),
+
+  /// Nearby itself refused: Bluetooth off, Play Services missing or stale.
+  radioUnavailable(
+    'Could not start the radio. Check Bluetooth is on and that Google Play '
+    'services is available on this device.',
+    'Retry',
+  );
+
+  const MeshFault(this.message, this.actionLabel);
+
+  final String message;
+  final String? actionLabel;
+}
 
 /// A peer we are currently connected to.
 @immutable
@@ -36,23 +72,6 @@ class MeshPeer {
   /// What the peer advertised — stable across reconnects, so this is what
   /// gets shown to humans.
   final String name;
-}
-
-/// One line of transport activity. For a spike the log is the product.
-@immutable
-class MeshLogEntry {
-  MeshLogEntry(this.text) : time = DateTime.now();
-
-  final DateTime time;
-  final String text;
-
-  String get stamp {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(time.hour)}:${two(time.minute)}:${two(time.second)}';
-  }
-
-  @override
-  String toString() => '$stamp  $text';
 }
 
 /// Owns the Nearby Connections lifecycle and exposes it as observable state.
@@ -95,6 +114,9 @@ class MeshService extends ChangeNotifier implements MeshTransport {
 
   bool _running = false;
   bool _gpsEnabled = true;
+  MeshFault _fault = MeshFault.none;
+  String? _faultDetail;
+  List<String> _missingPermissions = [];
   bool _disposed = false;
 
   /// endpointId -> name, for peers we are actually connected to.
@@ -111,8 +133,6 @@ class MeshService extends ChangeNotifier implements MeshTransport {
   /// endpointId -> when the link came up, for reporting session length.
   final Map<String, DateTime> _connectedAt = {};
 
-  final List<MeshLogEntry> _entries = [];
-
   // --- observable state ----------------------------------------------------
 
   bool get isRunning => _running;
@@ -123,13 +143,19 @@ class MeshService extends ChangeNotifier implements MeshTransport {
 
   int get pendingCount => _pending.length;
 
+  /// Why the last start attempt failed, or [MeshFault.none].
+  MeshFault get fault => _fault;
+
+  /// The underlying error, for the log and for a details line in the UI.
+  String? get faultDetail => _faultDetail;
+
+  /// Human-readable names of the permissions still missing.
+  List<String> get missingPermissions => List.unmodifiable(_missingPermissions);
+
   List<MeshPeer> get peers => [
         for (final entry in _connected.entries)
           MeshPeer(endpointId: entry.key, name: entry.value),
       ];
-
-  /// Newest first.
-  List<MeshLogEntry> get log => List.unmodifiable(_entries);
 
   // --- internals -----------------------------------------------------------
 
@@ -164,11 +190,13 @@ class MeshService extends ChangeNotifier implements MeshTransport {
     if (!_disposed) notifyListeners();
   }
 
+  /// Transport activity goes to logcat only — read it with `flutter logs` or
+  /// `adb logcat`. There is no in-app log panel.
   void _append(String message) {
-    debugPrint('[MeshSync] $message');
-    _entries.insert(0, MeshLogEntry(message));
-    if (_entries.length > _maxLogEntries) _entries.removeLast();
-    _notify();
+    final now = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    debugPrint('[MeshSync] ${two(now.hour)}:${two(now.minute)}:'
+        '${two(now.second)}  $message');
   }
 
   // --- permissions ---------------------------------------------------------
@@ -179,32 +207,106 @@ class MeshService extends ChangeNotifier implements MeshTransport {
     _notify();
   }
 
-  Future<void> requestPermissions() async {
-    final statuses = await [
-      Permission.location,
-      Permission.bluetoothScan,
-      Permission.bluetoothAdvertise,
-      Permission.bluetoothConnect,
-      Permission.nearbyWifiDevices,
-    ].request();
+  /// Everything Nearby needs. Which of these actually exist depends on the
+  /// Android version, which is why nothing here is used to *block* a start —
+  /// it only explains one that already failed.
+  static const List<Permission> _required = [
+    Permission.location,
+    Permission.bluetoothScan,
+    Permission.bluetoothAdvertise,
+    Permission.bluetoothConnect,
+    Permission.nearbyWifiDevices,
+  ];
+
+  static String _label(Permission permission) =>
+      permission.toString().replaceFirst('Permission.', '');
+
+  /// Asks for anything missing. Returns whether everything is now granted.
+  Future<bool> requestPermissions() async {
+    final statuses = await _required.request();
 
     for (final entry in statuses.entries) {
-      final name = entry.key.toString().replaceFirst('Permission.', '');
-      _append('perm $name: ${entry.value.name}');
+      _append('perm ${_label(entry.key)}: ${entry.value.name}');
     }
+
+    final denied = [
+      for (final entry in statuses.entries)
+        if (!entry.value.isGranted) entry.key,
+    ];
+    _missingPermissions = [for (final p in denied) _label(p)];
 
     // Granting the location permission is not the same as having the GPS
     // toggle on, and Nearby drops connections almost immediately without it.
     await refreshGps();
-    if (!_gpsEnabled) {
-      _append('WARNING: location services are OFF — turn GPS on');
+
+    if (denied.isNotEmpty) {
+      final blocked = statuses.values.any((s) => s.isPermanentlyDenied);
+      _fault = blocked
+          ? MeshFault.permissionsBlocked
+          : MeshFault.permissionsDenied;
+      _faultDetail = 'Denied: ${_missingPermissions.join(', ')}';
+    } else if (!_gpsEnabled) {
+      _fault = MeshFault.locationOff;
+      _faultDetail = 'Location services are switched off';
+    } else {
+      _fault = MeshFault.none;
+      _faultDetail = null;
     }
+
+    _notify();
+    return denied.isEmpty && _gpsEnabled;
+  }
+
+  /// Opens the system settings page for this app, for permissions the user has
+  /// blocked with "don't ask again".
+  Future<void> openSettings() => openAppSettings();
+
+  /// Works out why a start attempt failed, so the UI can say something better
+  /// than "it didn't work".
+  ///
+  /// Deliberately runs *after* a failure rather than gating the attempt:
+  /// which permissions exist varies by Android version, so treating a
+  /// permission report as authoritative up front would refuse to start on
+  /// devices where the mesh works fine.
+  Future<void> _diagnose(String detail) async {
+    _faultDetail = detail;
+
+    final missing = <Permission>[];
+    var blocked = false;
+    for (final permission in _required) {
+      final status = await permission.status;
+      if (status.isGranted) continue;
+      missing.add(permission);
+      if (status.isPermanentlyDenied) blocked = true;
+    }
+    _missingPermissions = [for (final p in missing) _label(p)];
+
+    await refreshGps();
+
+    // Nearby reports its own permission failures as MISSING_PERMISSION_*,
+    // which is more trustworthy than our own reading of the permission state.
+    final nearbySaysPermissions = detail.contains('MISSING_PERMISSION');
+
+    if (missing.isNotEmpty || nearbySaysPermissions) {
+      _fault = blocked
+          ? MeshFault.permissionsBlocked
+          : MeshFault.permissionsDenied;
+    } else if (!_gpsEnabled) {
+      _fault = MeshFault.locationOff;
+    } else {
+      _fault = MeshFault.radioUnavailable;
+    }
+
+    _append('start failed (${_fault.name}): $detail');
   }
 
   // --- lifecycle -----------------------------------------------------------
 
   Future<void> start() async {
     if (_running) return;
+    _fault = MeshFault.none;
+    _faultDetail = null;
+    _notify();
     await refreshGps();
     try {
       final advertising = await Nearby().startAdvertising(
@@ -222,12 +324,26 @@ class MeshService extends ChangeNotifier implements MeshTransport {
         onEndpointFound: _onEndpointFound,
         onEndpointLost: _onEndpointLost,
       );
-      _running = true;
-      _append('started — advertising=$advertising discovering=$discovering');
+      if (advertising && discovering) {
+        _running = true;
+        _fault = MeshFault.none;
+        _faultDetail = null;
+        _missingPermissions = [];
+        _append('started — advertising and discovering as $nickname');
+      } else {
+        // Half-started is worse than not started: tear down whichever side
+        // came up so the state is honest.
+        await Nearby().stopAdvertising();
+        await Nearby().stopDiscovery();
+        await _diagnose(
+          'Nearby refused to start (advertising=$advertising, '
+          'discovering=$discovering)',
+        );
+      }
     } catch (e) {
-      _append('start failed: $e');
-      _notify();
+      await _diagnose('$e');
     }
+    _notify();
   }
 
   Future<void> stop() async {
@@ -241,7 +357,10 @@ class MeshService extends ChangeNotifier implements MeshTransport {
     _running = false;
     _connected.clear();
     _pending.clear();
+    _fault = MeshFault.none;
+    _faultDetail = null;
     _append('stopped');
+    _notify();
   }
 
   @override
@@ -336,6 +455,7 @@ class MeshService extends ChangeNotifier implements MeshTransport {
     _append(status == Status.CONNECTED
         ? 'CONNECTED to $name'
         : 'connection to $name ended as ${status.name}');
+    _notify();
 
     if (status == Status.CONNECTED) {
       // After the log line, so the flush reads in order beneath it.
@@ -355,6 +475,7 @@ class MeshService extends ChangeNotifier implements MeshTransport {
         ? ''
         : ' after ${DateTime.now().difference(since).inSeconds}s';
     _append('disconnected from $name$held');
+    _notify();
   }
 
   // --- sending -------------------------------------------------------------

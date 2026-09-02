@@ -189,7 +189,7 @@ class MeshRouter {
         // A responder confirms automatically, with no human tap, so an
         // unattended responder phone still acknowledges.
         if (isResponder && message.core.origin != origin) {
-          await _emitAck(message.id);
+          await sendAck(message.id);
         }
 
       case MessageType.ack:
@@ -241,7 +241,12 @@ class MeshRouter {
   }
 
   /// Creates and floods an ACK referencing [sosId].
-  Future<MeshMessage> _emitAck(String sosId) async {
+  ///
+  /// Normally called automatically the moment an SOS enters a responder's
+  /// store — no human tap, so an unattended responder phone still confirms.
+  /// Public so a responder can also acknowledge by hand, for an incident that
+  /// arrived before this device was switched to the responder role.
+  Future<MeshMessage> sendAck(String sosId) async {
     final seq = await store.nextSeq();
     final ack = MeshMessage.createAck(
       origin: origin,
