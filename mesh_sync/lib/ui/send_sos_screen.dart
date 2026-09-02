@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
+import 'address_text.dart';
 
 /// The compose form, as a full screen rather than a sheet — it is the single
 /// most important thing this app does.
@@ -83,13 +84,12 @@ class _SendSosScreenState extends State<SendSosScreen> {
               Icon(Icons.place_outlined, size: 20, color: theme.hintColor),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  _loc == null
-                      ? 'No location available'
-                      : '${_loc!.lat.toStringAsFixed(4)}, '
-                            '${_loc!.lon.toStringAsFixed(4)}',
-                  style: theme.textTheme.bodyLarge,
-                ),
+                child: _loc == null
+                    ? Text(
+                        'No location available',
+                        style: theme.textTheme.bodyLarge,
+                      )
+                    : AddressText(point: _loc!, location: widget.app.location),
               ),
               if (_locating)
                 const SizedBox(

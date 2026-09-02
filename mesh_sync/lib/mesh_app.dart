@@ -103,7 +103,7 @@ class MeshApp extends ChangeNotifier {
 
   final DeviceIdentity _identity;
 
-  final LocationService location = const LocationService();
+  final LocationService location = LocationService();
   final MeshService service;
   final MessageStore store;
   final MeshRouter router;

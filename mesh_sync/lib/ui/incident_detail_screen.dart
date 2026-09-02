@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
+import 'address_text.dart';
 
 /// One incident in full, with the actions a responder can take on it.
 class IncidentDetailScreen extends StatelessWidget {
@@ -82,12 +83,14 @@ class _Detail extends StatelessWidget {
               const SizedBox(height: 14),
               _Row(
                 icon: Icons.place_outlined,
-                label: loc == null
-                    ? 'No location attached'
-                    : '${loc.lat.toStringAsFixed(4)}, '
-                          '${loc.lon.toStringAsFixed(4)}',
                 trailing: loc == null ? null : 'View on Map',
                 onTrailingTap: loc == null ? null : () => _openMap(loc),
+                child: loc == null
+                    ? Text(
+                        'No location attached',
+                        style: theme.textTheme.bodyLarge,
+                      )
+                    : AddressText(point: loc, location: app.location),
               ),
             ],
           ),
@@ -141,42 +144,22 @@ class _Detail extends StatelessWidget {
           ],
 
           const SizedBox(height: 28),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  // A responder device already ACKs on receipt, so the useful
-                  // action here is a written reply: a person saying they have
-                  // read it, which a device receipt cannot mean.
-                  onPressed: state == IncidentState.closed
-                      ? null
-                      : () => _reply(context),
-                  icon: const Icon(Icons.check),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green.shade700,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  label: const Text('Reply'),
-                ),
+          FilledButton.icon(
+            // A responder device already ACKs on receipt, so the useful action
+            // here is a written reply: a person saying they have read it,
+            // which a device receipt cannot mean.
+            onPressed: state == IncidentState.closed
+                ? null
+                : () => _reply(context),
+            icon: const Icon(Icons.check),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              minimumSize: const Size.fromHeight(56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: loc == null ? null : () => _openMap(loc),
-                  icon: const Icon(Icons.navigation),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  label: const Text('Navigate'),
-                ),
-              ),
-            ],
+            ),
+            label: const Text('Reply'),
           ),
         ],
       ),
@@ -466,13 +449,15 @@ class _Card extends StatelessWidget {
 class _Row extends StatelessWidget {
   const _Row({
     required this.icon,
-    required this.label,
+    this.label,
+    this.child,
     this.trailing,
     this.onTrailingTap,
-  });
+  }) : assert(label != null || child != null);
 
   final IconData icon;
-  final String label;
+  final String? label;
+  final Widget? child;
   final String? trailing;
   final VoidCallback? onTrailingTap;
 
@@ -483,7 +468,9 @@ class _Row extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: theme.hintColor),
         const SizedBox(width: 12),
-        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
+        Expanded(
+          child: child ?? Text(label!, style: theme.textTheme.bodyLarge),
+        ),
         if (trailing != null)
           onTrailingTap == null
               ? Text(
