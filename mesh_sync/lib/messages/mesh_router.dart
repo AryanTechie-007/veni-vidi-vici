@@ -22,6 +22,12 @@ enum DropReason {
   cancelled,
 }
 
+/// Shortest gap between two updates on the same incident.
+const int kUpdateMinIntervalSeconds = 60;
+
+/// Ceiling on updates per incident, so a stuck device cannot flood for 72h.
+const int kMaxUpdatesPerIncident = 20;
+
 class MeshRouter {
   MeshRouter({
     required this.store,
@@ -165,6 +171,19 @@ class MeshRouter {
       return;
     }
 
+    // An update about an incident that is already closed is dead traffic. The
+    // victim's own device may not have heard the CANCEL yet and will keep
+    // emitting; refusing here is where the bandwidth is actually saved.
+    final ref = message.core.ref;
+    if (message.core.type == MessageType.update &&
+        ref != null &&
+        await store.isCancelled(ref)) {
+      onDropped?.call(DropReason.cancelled, message.id);
+      await store.markSeen(message.id, expiresAt: message.env.exp);
+      _log('refused update for cancelled $ref');
+      return;
+    }
+
     // The increment belongs to receipt, not to forwarding: a node one hop from
     // the origin holds the message at hops=1, and hands on that same copy.
     final relayed = message.incrementHops();
@@ -216,6 +235,19 @@ class MeshRouter {
           'CANCEL (${message.core.reason?.wire ?? 'no reason'}) for $ref '
           '— purged from local storage',
         );
+
+      case MessageType.update:
+        final ref = message.core.ref;
+        if (ref == null) return;
+        // Pointedly does NOT markAcked. An acknowledged message stops being
+        // relayed, so treating an update as an acknowledgement would have a
+        // victim silencing their own SOS.
+        //
+        // It does not un-suppress the SOS either: the update floods on its own
+        // and carries the news, so re-flooding the original would pay twice
+        // for the same information.
+        onReferencedChanged?.call(ref);
+        _log('UPDATE (${message.core.st?.wire ?? 'no status'}) for $ref');
 
       case MessageType.unknown:
         // Relayed but never acted on, so newer builds can add types without
@@ -271,6 +303,75 @@ class MeshRouter {
     );
     return ack;
   }
+
+  /// How long until another update on [sosId] would be accepted, in seconds.
+  /// Zero when one can be sent now.
+  int secondsUntilNextUpdate(String sosId) {
+    final budget = _updateBudget[sosId];
+    if (budget == null) return 0;
+    final elapsed = now - budget.lastAt;
+    final remaining = kUpdateMinIntervalSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  /// Revises an open incident, and floods the update.
+  ///
+  /// Returns null when the budget refuses it. Rate limiting lives here rather
+  /// than in the UI so it cannot be tapped around, and because it is a
+  /// property of the radio, not of any one screen.
+  Future<MeshMessage?> createUpdate({
+    required String sosId,
+    required UpdateStatus status,
+    String? txt,
+    GeoPoint? loc,
+  }) async {
+    if (await store.isCancelled(sosId)) {
+      _log('update refused: $sosId is closed');
+      return null;
+    }
+
+    final budget = _updateBudget[sosId] ?? _UpdateBudget();
+    if (budget.count >= kMaxUpdatesPerIncident) {
+      _log('update refused: $sosId is at the $kMaxUpdatesPerIncident cap');
+      return null;
+    }
+    if (secondsUntilNextUpdate(sosId) > 0) {
+      _log(
+        'update refused: $sosId updated less than '
+        '${kUpdateMinIntervalSeconds}s ago',
+      );
+      return null;
+    }
+
+    final seq = await store.nextSeq();
+    final update = MeshMessage.createUpdate(
+      origin: origin,
+      uid: uid,
+      seq: seq,
+      now: now,
+      sosId: sosId,
+      status: status,
+      txt: txt,
+      loc: loc,
+    );
+
+    budget.lastAt = now;
+    budget.count++;
+    _updateBudget[sosId] = budget;
+
+    await _accept(update, receivedAt: now);
+    final peers = await transport.broadcast(update.encode());
+    _log(
+      'UPDATE ${update.id} (${status.wire}) for $sosId → $peers peer'
+      '${peers == 1 ? '' : 's'}',
+    );
+    return update;
+  }
+
+  /// Per-incident update budget. In memory only, so a restart resets it —
+  /// acceptable while the store itself is in memory, and it moves into SQLite
+  /// alongside it.
+  final Map<String, _UpdateBudget> _updateBudget = {};
 
   /// Closes the incident referenced by [sosId] and floods the CANCEL.
   Future<MeshMessage> createCancel({
@@ -350,4 +451,9 @@ class MeshRouter {
       sent.removeWhere((id) => !live.contains(id));
     }
   }
+}
+
+class _UpdateBudget {
+  int lastAt = 0;
+  int count = 0;
 }

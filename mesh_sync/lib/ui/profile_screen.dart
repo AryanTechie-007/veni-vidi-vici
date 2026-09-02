@@ -24,7 +24,9 @@ class ProfileScreen extends StatelessWidget {
                 ? Colors.blue.shade100
                 : theme.colorScheme.secondaryContainer,
             child: Icon(
-              responder ? Icons.medical_services_outlined : Icons.person_outline,
+              responder
+                  ? Icons.medical_services_outlined
+                  : Icons.person_outline,
               size: 40,
             ),
           ),
@@ -33,8 +35,9 @@ class ProfileScreen extends StatelessWidget {
         Center(
           child: Text(
             app.username ?? 'Signed out',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const SizedBox(height: 4),
@@ -46,22 +49,25 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 28),
 
-        _Group(title: 'Device identity', children: [
-          ListTile(
-            leading: const Icon(Icons.fingerprint),
-            title: const Text('Origin'),
-            subtitle: Text(app.origin),
-          ),
-          ListTile(
-            leading: const Icon(Icons.tag),
-            title: const Text('Messages created'),
-            // seq is the message counter. It survives sign-out on purpose:
-            // ids are hash(origin + seq), so restarting it would reuse the ids
-            // of already-sent messages and the mesh would drop them.
-            subtitle: const Text('Counter is kept across sign-out'),
-            trailing: Text('${app.seq}'),
-          ),
-        ]),
+        _Group(
+          title: 'Device identity',
+          children: [
+            ListTile(
+              leading: const Icon(Icons.fingerprint),
+              title: const Text('Origin'),
+              subtitle: Text(app.origin),
+            ),
+            ListTile(
+              leading: const Icon(Icons.tag),
+              title: const Text('Messages created'),
+              // seq is the message counter. It survives sign-out on purpose:
+              // ids are hash(origin + seq), so restarting it would reuse the ids
+              // of already-sent messages and the mesh would drop them.
+              subtitle: const Text('Counter is kept across sign-out'),
+              trailing: Text('${app.seq}'),
+            ),
+          ],
+        ),
         const SizedBox(height: 28),
 
         OutlinedButton.icon(

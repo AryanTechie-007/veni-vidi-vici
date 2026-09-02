@@ -33,6 +33,22 @@ class ResponderReply {
   final int ts;
 }
 
+/// A victim revising their own open incident.
+@immutable
+class IncidentUpdate {
+  const IncidentUpdate({
+    required this.status,
+    required this.text,
+    required this.ts,
+  });
+
+  /// Null when the sender used a status this build does not recognise.
+  final UpdateStatus? status;
+
+  final String? text;
+  final int ts;
+}
+
 /// The lifecycle of one incident, as this device understands it.
 enum IncidentState {
   /// Nobody has acknowledged it yet.
@@ -143,6 +159,17 @@ class MeshApp extends ChangeNotifier {
             );
       }
     }
+    if (message.core.type == MessageType.update && message.core.ref != null) {
+      _updatesByRef
+          .putIfAbsent(message.core.ref!, () => [])
+          .add(
+            IncidentUpdate(
+              status: message.core.st,
+              text: message.core.txt,
+              ts: message.core.ts,
+            ),
+          );
+    }
     if (message.core.type == MessageType.cancel && message.core.ref != null) {
       // The store purges it and refuses it from peers, exactly as the spec
       // says. This list is a local archive kept only so the operator can see
@@ -203,6 +230,39 @@ class MeshApp extends ChangeNotifier {
 
   final Set<String> _ackedIds = {};
   final Map<String, List<ResponderReply>> _repliesByRef = {};
+  final Map<String, List<IncidentUpdate>> _updatesByRef = {};
+
+  /// Status updates on [sosId], oldest first.
+  List<IncidentUpdate> updatesFor(String sosId) =>
+      List.unmodifiable(_updatesByRef[sosId] ?? const []);
+
+  /// When this incident last showed any sign of life — the SOS itself, or the
+  /// most recent update on it. Used to sort the responder's list.
+  int lastActivity(MeshMessage sos) {
+    final updates = _updatesByRef[sos.id];
+    if (updates == null || updates.isEmpty) return sos.core.ts;
+    return updates.last.ts > sos.core.ts ? updates.last.ts : sos.core.ts;
+  }
+
+  /// Seconds until another update on [sosId] would be accepted; zero if now.
+  int secondsUntilNextUpdate(String sosId) =>
+      router.secondsUntilNextUpdate(sosId);
+
+  /// Revises an open incident. Returns false when the rate limit refused it.
+  Future<bool> sendUpdate(
+    String sosId, {
+    required UpdateStatus status,
+    String? txt,
+  }) async {
+    final sent = await router.createUpdate(
+      sosId: sosId,
+      status: status,
+      txt: txt,
+    );
+    notifyListeners();
+    return sent != null;
+  }
+
   final Set<String> _closedIds = {};
 
   /// Acknowledges an incident by hand.

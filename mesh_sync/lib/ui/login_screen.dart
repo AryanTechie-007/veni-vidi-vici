@@ -69,8 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Stay connected. Stay safe. Together.',
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: theme.hintColor),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.hintColor,
+                    ),
                   ),
                   const SizedBox(height: 40),
                   TextField(
@@ -114,19 +115,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Get Started',
-                              style: TextStyle(fontSize: 16)),
+                          : const Text(
+                              'Get Started',
+                              style: TextStyle(fontSize: 16),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'Works offline. No internet needed.',
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.hintColor),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
                   ),
                 ],
               ),

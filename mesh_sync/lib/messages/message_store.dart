@@ -78,7 +78,7 @@ abstract interface class MessageStore {
 /// this is a step towards SQLite rather than the destination.
 class InMemoryMessageStore implements MessageStore {
   InMemoryMessageStore({int startingSeq = 0, this.onSeqAdvanced})
-      : _seq = startingSeq;
+    : _seq = startingSeq;
 
   /// Fired on every increment so the app can persist the counter.
   ///
@@ -134,8 +134,8 @@ class InMemoryMessageStore implements MessageStore {
     final hops = existing == null
         ? message.env.hops
         : (existing.message.env.hops < message.env.hops
-            ? existing.message.env.hops
-            : message.env.hops);
+              ? existing.message.env.hops
+              : message.env.hops);
 
     _messages[message.id] = _StoredMessage(
       message: MeshMessage(
@@ -172,14 +172,15 @@ class InMemoryMessageStore implements MessageStore {
 
   @override
   Future<List<MeshMessage>> forwardable({required int now}) async => [
-        for (final stored in _messages.values)
-          if (stored.localExpiry > now && !_acked.contains(stored.message.id))
-            stored.message,
-      ];
+    for (final stored in _messages.values)
+      if (stored.localExpiry > now && !_acked.contains(stored.message.id))
+        stored.message,
+  ];
 
   @override
-  Future<List<MeshMessage>> all() async =>
-      [for (final stored in _messages.values) stored.message];
+  Future<List<MeshMessage>> all() async => [
+    for (final stored in _messages.values) stored.message,
+  ];
 
   @override
   Future<void> delete(String id) async => _messages.remove(id);

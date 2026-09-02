@@ -43,6 +43,9 @@ enum MessageType {
   ack('ACK'),
   cancel('CANCEL'),
 
+  /// A victim revising their own open incident.
+  update('UPDATE'),
+
   /// A type this build does not recognise.
   ///
   /// The spec keeps `v` so newer builds interoperate with older ones, and all
@@ -76,6 +79,35 @@ enum Category {
     if (value == null) return null;
     for (final c in values) {
       if (c.wire == value) return c;
+    }
+    return null;
+  }
+}
+
+/// How an open incident has changed.
+///
+/// Deliberately small and structured: someone one-handed under rubble with a
+/// dying phone taps, they do not type. It is also the cheapest thing to put on
+/// a bandwidth-limited radio.
+///
+/// There is no SAFE here on purpose — marking yourself safe is terminal, and
+/// that is [CancelReason.selfResolved] via a CANCEL.
+enum UpdateStatus {
+  stillHere('STILL_HERE', 'Still here'),
+  worse('WORSE', 'Getting worse'),
+  better('BETTER', 'Getting better'),
+  moved('MOVED', 'Moved location');
+
+  const UpdateStatus(this.wire, this.label);
+
+  final String wire;
+  final String label;
+
+  /// Unknown statuses decode to null rather than failing the whole packet.
+  static UpdateStatus? fromWire(String? value) {
+    if (value == null) return null;
+    for (final s in values) {
+      if (s.wire == value) return s;
     }
     return null;
   }
@@ -157,6 +189,7 @@ class MessageCore {
     this.txt,
     this.ref,
     this.reason,
+    this.st,
   });
 
   /// Format version, so newer builds can interoperate with older ones.
@@ -199,6 +232,9 @@ class MessageCore {
   /// On CANCEL only.
   final CancelReason? reason;
 
+  /// On UPDATE only: how the incident has changed.
+  final UpdateStatus? st;
+
   String get typeWire => rawType ?? type.wire;
 
   Map<String, dynamic> toJson() => {
@@ -215,6 +251,7 @@ class MessageCore {
     if (txt != null) 'txt': txt,
     if (ref != null) 'ref': ref,
     if (reason != null) 'reason': reason!.wire,
+    if (st != null) 'st': st!.wire,
   };
 
   factory MessageCore.fromJson(Map<Object?, Object?> json) {
@@ -262,6 +299,7 @@ class MessageCore {
       txt: txt,
       ref: _asString(json['ref'], 'core.ref'),
       reason: CancelReason.fromWire(_asString(json['reason'], 'core.reason')),
+      st: UpdateStatus.fromWire(_asString(json['st'], 'core.st')),
     );
   }
 
@@ -396,6 +434,45 @@ class MeshMessage {
         ts: now,
         ref: sosId,
         txt: txt,
+      ),
+      env: MessageEnvelope(hops: 0, exp: now + kExpirySeconds),
+    );
+  }
+
+  /// Revises the open incident [sosId], which must be one this device sent.
+  ///
+  /// Travels through the same flooding machinery as every other type, but is
+  /// pointedly NOT an ACK: an ACK marks its reference acknowledged, and an
+  /// acknowledged message stops being relayed. A victim updating their own SOS
+  /// via an ACK would silence it.
+  factory MeshMessage.createUpdate({
+    required String origin,
+    required String uid,
+    required int seq,
+    required int now,
+    required String sosId,
+    required UpdateStatus status,
+    String? txt,
+    GeoPoint? loc,
+  }) {
+    if (txt != null && txt.length > kMaxTextLength) {
+      throw MalformedMessageException(
+        'txt is ${txt.length} chars, max $kMaxTextLength',
+      );
+    }
+    return MeshMessage(
+      core: MessageCore(
+        id: computeId(origin, seq),
+        type: MessageType.update,
+        rawType: MessageType.update.wire,
+        origin: origin,
+        uid: uid,
+        seq: seq,
+        ts: now,
+        ref: sosId,
+        st: status,
+        txt: txt,
+        loc: loc,
       ),
       env: MessageEnvelope(hops: 0, exp: now + kExpirySeconds),
     );

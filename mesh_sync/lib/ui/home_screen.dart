@@ -5,6 +5,7 @@ import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
 import 'mesh_status_card.dart';
 import 'sos_sheet.dart';
+import 'update_sheet.dart';
 
 /// One screen for both roles: mesh status, the SOS button, and the history of
 /// everything this device holds.
@@ -162,6 +163,12 @@ class _Section extends StatelessWidget {
               message: message,
               state: app.stateOf(message.id),
               replies: app.repliesFor(message.id),
+              updates: app.updatesFor(message.id),
+              onUpdate:
+                  message.core.origin == app.origin &&
+                      app.stateOf(message.id) != IncidentState.closed
+                  ? () => _sendUpdate(context, message)
+                  : null,
               peerCount: app.service.peers.length,
               mine: message.core.origin == app.origin,
               onClose: app.stateOf(message.id) == IncidentState.closed
@@ -170,6 +177,35 @@ class _Section extends StatelessWidget {
             ),
       ],
     );
+  }
+
+  /// Posts a status update on the victim's own incident.
+  Future<void> _sendUpdate(BuildContext context, MeshMessage message) async {
+    final wait = app.secondsUntilNextUpdate(message.id);
+    if (wait > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can update again in ${wait}s')),
+      );
+      return;
+    }
+
+    final request = await showModalBottomSheet<UpdateRequest>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const UpdateSheet(),
+    );
+    if (request == null) return;
+
+    final sent = await app.sendUpdate(
+      message.id,
+      status: request.status,
+      txt: request.text.isEmpty ? null : request.text,
+    );
+    if (context.mounted && !sent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Update not sent — too soon, or closed')),
+      );
+    }
   }
 
   /// Closing floods a CANCEL that purges the incident from every device that
@@ -215,9 +251,11 @@ class IncidentTile extends StatelessWidget {
     required this.message,
     required this.state,
     required this.replies,
+    required this.updates,
     required this.peerCount,
     required this.mine,
     required this.onClose,
+    this.onUpdate,
   });
 
   final MeshMessage message;
@@ -226,9 +264,15 @@ class IncidentTile extends StatelessWidget {
   /// Written replies from responders. A device receipt says a phone got it; a
   /// reply says a person read it, so it outranks the status line.
   final List<ResponderReply> replies;
+
+  /// Status changes the sender posted after the original alert.
+  final List<IncidentUpdate> updates;
   final int peerCount;
   final bool mine;
   final VoidCallback? onClose;
+
+  /// Null unless this is the sender's own open incident.
+  final VoidCallback? onUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -320,6 +364,15 @@ class IncidentTile extends StatelessWidget {
                       : FontWeight.normal,
                 ),
               ),
+            if (updates.isNotEmpty)
+              Text(
+                'You reported: '
+                '${updates.last.status?.label ?? 'a change'}'
+                '${updates.last.text == null ? '' : ' — ${updates.last.text}'}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             Text(
               // Elapsed time is shown throughout so a long silence is visible
               // rather than ambiguous. hops is diagnostic only — nothing is
@@ -333,12 +386,18 @@ class IncidentTile extends StatelessWidget {
           ],
         ),
         isThreeLine: true,
-        trailing: onClose == null
-            ? null
-            : TextButton(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onUpdate != null)
+              TextButton(onPressed: onUpdate, child: const Text('Update')),
+            if (onClose != null)
+              TextButton(
                 onPressed: onClose,
                 child: Text(mine ? 'I am safe' : 'Close'),
               ),
+          ],
+        ),
       ),
     );
   }

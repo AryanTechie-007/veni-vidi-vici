@@ -31,7 +31,12 @@ const String _kUsername = 'mesh.username';
 /// dropped as duplicates — with no error surfaced anywhere.
 class DeviceIdentity {
   DeviceIdentity._(
-      this._prefs, this.origin, this._role, this._seq, this._username);
+    this._prefs,
+    this.origin,
+    this._role,
+    this._seq,
+    this._username,
+  );
 
   final SharedPreferences _prefs;
 

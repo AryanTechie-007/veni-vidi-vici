@@ -60,6 +60,7 @@ class ResponderScreen extends StatelessWidget {
             _IncidentRow(
               message: message,
               state: app.stateOf(message.id),
+              latestUpdate: app.updatesFor(message.id).lastOrNull,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) =>
@@ -143,11 +144,16 @@ class _IncidentRow extends StatelessWidget {
   const _IncidentRow({
     required this.message,
     required this.state,
+    required this.latestUpdate,
     required this.onTap,
   });
 
   final MeshMessage message;
   final IncidentState state;
+
+  /// The sender's most recent status change, if any. Shown instead of the
+  /// category, since it is the more current fact.
+  final IncidentUpdate? latestUpdate;
   final VoidCallback onTap;
 
   @override
@@ -175,12 +181,29 @@ class _IncidentRow extends StatelessWidget {
             decoration: closed ? TextDecoration.lineThrough : null,
           ),
         ),
-        subtitle: Text(
-          '${core.cat?.wire ?? 'UNKNOWN'} · ${_elapsed(core.ts)} · '
-          '${message.env.hops} hop${message.env.hops == 1 ? '' : 's'}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${core.cat?.wire ?? 'UNKNOWN'} · ${_elapsed(core.ts)} · '
+              '${message.env.hops} hop${message.env.hops == 1 ? '' : 's'}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (latestUpdate != null)
+              Text(
+                '${latestUpdate!.status?.label ?? 'Update'} · '
+                '${_elapsed(latestUpdate!.ts)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
         ),
+        isThreeLine: latestUpdate != null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

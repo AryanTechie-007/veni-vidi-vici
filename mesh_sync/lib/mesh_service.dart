@@ -36,7 +36,7 @@ enum MeshFault {
   /// Refused with "don't ask again" — only Android settings can undo it.
   permissionsBlocked(
     'Permissions are blocked. Turn them on in Android settings, then start '
-    'the mesh again.',
+        'the mesh again.',
     'Open settings',
   ),
 
@@ -51,7 +51,7 @@ enum MeshFault {
   /// Nearby itself refused: Bluetooth off, Play Services missing or stale.
   radioUnavailable(
     'Could not start the radio. Check Bluetooth is on and that Google Play '
-    'services is available on this device.',
+        'services is available on this device.',
     'Retry',
   );
 
@@ -153,17 +153,19 @@ class MeshService extends ChangeNotifier implements MeshTransport {
   List<String> get missingPermissions => List.unmodifiable(_missingPermissions);
 
   List<MeshPeer> get peers => [
-        for (final entry in _connected.entries)
-          MeshPeer(endpointId: entry.key, name: entry.value),
-      ];
+    for (final entry in _connected.entries)
+      MeshPeer(endpointId: entry.key, name: entry.value),
+  ];
 
   // --- internals -----------------------------------------------------------
 
   static String _generateTag() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random();
-    final suffix =
-        List.generate(4, (_) => chars[rng.nextInt(chars.length)]).join();
+    final suffix = List.generate(
+      4,
+      (_) => chars[rng.nextInt(chars.length)],
+    ).join();
     return 'dev-$suffix';
   }
 
@@ -195,8 +197,10 @@ class MeshService extends ChangeNotifier implements MeshTransport {
   void _append(String message) {
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');
-    debugPrint('[MeshSync] ${two(now.hour)}:${two(now.minute)}:'
-        '${two(now.second)}  $message');
+    debugPrint(
+      '[MeshSync] ${two(now.hour)}:${two(now.minute)}:'
+      '${two(now.second)}  $message',
+    );
   }
 
   // --- permissions ---------------------------------------------------------
@@ -393,17 +397,17 @@ class MeshService extends ChangeNotifier implements MeshTransport {
 
     Nearby()
         .requestConnection(
-      nickname,
-      id,
-      onConnectionInitiated: _onConnectionInitiated,
-      onConnectionResult: _onConnectionResult,
-      onDisconnected: _onDisconnected,
-    )
+          nickname,
+          id,
+          onConnectionInitiated: _onConnectionInitiated,
+          onConnectionResult: _onConnectionResult,
+          onDisconnected: _onDisconnected,
+        )
         .catchError((e) {
-      _pending.remove(id);
-      _append('requestConnection to $name failed: $e');
-      return false;
-    });
+          _pending.remove(id);
+          _append('requestConnection to $name failed: $e');
+          return false;
+        });
   }
 
   void _onEndpointLost(String? id) {
@@ -416,13 +420,12 @@ class MeshService extends ChangeNotifier implements MeshTransport {
     _append('$direction connection with ${info.endpointName} — auto-accepting');
 
     // No pairing-code dialog. Nobody confirms a 4-digit token in an emergency.
-    Nearby().acceptConnection(
-      id,
-      onPayLoadRecieved: _onPayloadReceived,
-    ).catchError((e) {
-      _append('acceptConnection with ${info.endpointName} failed: $e');
-      return false;
-    });
+    Nearby()
+        .acceptConnection(id, onPayLoadRecieved: _onPayloadReceived)
+        .catchError((e) {
+          _append('acceptConnection with ${info.endpointName} failed: $e');
+          return false;
+        });
   }
 
   void _onPayloadReceived(String endpointId, Payload payload) {
@@ -452,9 +455,11 @@ class MeshService extends ChangeNotifier implements MeshTransport {
       _connected[id] = name;
       _connectedAt[id] = DateTime.now();
     }
-    _append(status == Status.CONNECTED
-        ? 'CONNECTED to $name'
-        : 'connection to $name ended as ${status.name}');
+    _append(
+      status == Status.CONNECTED
+          ? 'CONNECTED to $name'
+          : 'connection to $name ended as ${status.name}',
+    );
     _notify();
 
     if (status == Status.CONNECTED) {

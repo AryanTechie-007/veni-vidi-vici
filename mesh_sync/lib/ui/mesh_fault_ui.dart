@@ -5,21 +5,21 @@ import '../mesh_service.dart';
 /// The one sensible next step for each fault, shared by the banner and the
 /// dialog so they can never disagree about what the fix is.
 VoidCallback? faultAction(MeshService service) => switch (service.fault) {
-      MeshFault.permissionsDenied => () async {
-          if (await service.requestPermissions()) await service.start();
-        },
-      MeshFault.permissionsBlocked => service.openSettings,
-      MeshFault.radioUnavailable => service.start,
-      // Only the user can flip the system location toggle.
-      MeshFault.locationOff || MeshFault.none => null,
-    };
+  MeshFault.permissionsDenied => () async {
+    if (await service.requestPermissions()) await service.start();
+  },
+  MeshFault.permissionsBlocked => service.openSettings,
+  MeshFault.radioUnavailable => service.start,
+  // Only the user can flip the system location toggle.
+  MeshFault.locationOff || MeshFault.none => null,
+};
 
 /// Supporting detail: which permissions are missing, and the raw error.
 String faultDetail(MeshService service) => [
-      if (service.missingPermissions.isNotEmpty)
-        'Missing: ${service.missingPermissions.join(', ')}',
-      if (service.faultDetail != null) service.faultDetail!,
-    ].join('\n');
+  if (service.missingPermissions.isNotEmpty)
+    'Missing: ${service.missingPermissions.join(', ')}',
+  if (service.faultDetail != null) service.faultDetail!,
+].join('\n');
 
 /// Raised when the mesh fails to come up.
 ///
@@ -59,7 +59,9 @@ Future<void> showMeshFaultDialog(
             const SizedBox(height: 12),
             Text(
               detail,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+              ),
             ),
           ],
         ],

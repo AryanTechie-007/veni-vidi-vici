@@ -42,8 +42,10 @@ class SosSheetState extends State<SosSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('What is happening?',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'What is happening?',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,

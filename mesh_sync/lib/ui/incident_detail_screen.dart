@@ -140,6 +140,9 @@ class _Detail extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
+          _UpdatesCard(updates: app.updatesFor(message.id)),
+          const SizedBox(height: 16),
+
           _RepliesCard(replies: app.repliesFor(message.id)),
           const SizedBox(height: 24),
 
@@ -221,6 +224,73 @@ class _Detail extends StatelessWidget {
       await app.cancel(message.id, CancelReason.rescued);
     }
   }
+}
+
+class _UpdatesCard extends StatelessWidget {
+  const _UpdatesCard({required this.updates});
+
+  final List<IncidentUpdate> updates;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _Card(
+      children: [
+        Text('Sender updates', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (updates.isEmpty)
+          Text(
+            'Nothing since the original alert.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          )
+        else
+          // Newest first: the current situation matters more than the history.
+          for (final update in updates.reversed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _iconFor(update.status),
+                    size: 18,
+                    color: theme.hintColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          update.status?.label ?? 'Unrecognised status',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (update.text != null) Text(update.text!),
+                        Text(
+                          _elapsed(update.ts),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+
+  static IconData _iconFor(UpdateStatus? status) => switch (status) {
+    UpdateStatus.stillHere => Icons.hourglass_empty,
+    UpdateStatus.worse => Icons.trending_down,
+    UpdateStatus.better => Icons.trending_up,
+    UpdateStatus.moved => Icons.directions_walk,
+    null => Icons.help_outline,
+  };
 }
 
 class _RepliesCard extends StatelessWidget {
