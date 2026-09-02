@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
 import 'address_text.dart';
+import 'category_style.dart';
 
 /// One incident in full, with the actions a responder can take on it.
 class IncidentDetailScreen extends StatelessWidget {
@@ -44,12 +45,12 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final core = message.core;
     final state = app.stateOf(message.id);
     final loc = core.loc;
     final updates = app.updatesFor(message.id);
     final replies = app.repliesFor(message.id);
+    final latest = updates.isEmpty ? null : updates.last;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +59,7 @@ class _Detail extends StatelessWidget {
         actions: [
           Center(child: _StateChip(state: state)),
           // Closing is destructive and rare, so it lives behind the menu
-          // rather than competing with the two primary actions.
+          // rather than competing with the primary action.
           PopupMenuButton<void>(
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -71,106 +72,58 @@ class _Detail extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          _Card(
-            children: [
-              _Row(
-                icon: Icons.access_time,
-                label: core.cat?.label ?? 'Unknown',
-                trailing: _elapsed(core.ts),
-              ),
-              const SizedBox(height: 14),
-              _Row(
-                icon: Icons.place_outlined,
-                trailing: loc == null ? null : 'View on Map',
-                onTrailingTap: loc == null ? null : () => _openMap(loc),
-                child: loc == null
-                    ? Text(
-                        'No location attached',
-                        style: theme.textTheme.bodyLarge,
-                      )
-                    : AddressText(point: loc, location: app.location),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // A deteriorating situation is the single most important fact on
+          // this screen, so it goes above everything rather than four scrolls
+          // down among the history.
+          if (latest?.status == UpdateStatus.worse)
+            _WorseBanner(update: latest!),
 
-          _Card(
-            children: [
-              Text(
-                'Details',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                core.txt ?? 'No description given',
-                style: core.txt == null
-                    ? theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.hintColor,
-                      )
-                    : theme.textTheme.bodyLarge,
-              ),
-              const Divider(height: 28),
-              IntrinsicHeight(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _Stat(
-                        label: 'People Affected',
-                        value: '${core.n ?? '—'}',
-                      ),
-                    ),
-                    const VerticalDivider(width: 1),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _Stat(label: 'Status', value: _stateLabel(state)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _SituationCard(app: app, message: message),
+          const SizedBox(height: 14),
+          _LocationCard(
+            app: app,
+            message: message,
+            onMap: () => _openMap(loc!),
           ),
 
-          if (updates.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _UpdatesCard(updates: updates),
-          ],
-          if (replies.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _RepliesCard(replies: replies),
-          ],
-
-          const SizedBox(height: 28),
-          FilledButton.icon(
-            // A responder device already ACKs on receipt, so the useful action
-            // here is a written reply: a person saying they have read it,
-            // which a device receipt cannot mean.
-            onPressed: state == IncidentState.closed
-                ? null
-                : () => _reply(context),
-            icon: const Icon(Icons.check),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
-              minimumSize: const Size.fromHeight(56),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          if (updates.isNotEmpty || replies.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _ActivityCard(
+              updates: updates,
+              replies: replies,
+              origin: app.origin,
             ),
-            label: const Text('Reply'),
-          ),
+          ],
         ],
+      ),
+      // The action sits outside the scroll view so it is always reachable, and
+      // inside a SafeArea so the gesture bar does not sit on top of it.
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: FilledButton.icon(
+          // A responder device already ACKs on receipt, so the useful action
+          // here is a written reply: a person saying they have read it, which
+          // a device receipt cannot mean.
+          onPressed: state == IncidentState.closed
+              ? null
+              : () => _reply(context),
+          icon: const Icon(Icons.reply),
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.green.shade700,
+            minimumSize: const Size.fromHeight(54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          label: const Text('Reply'),
+        ),
       ),
     );
   }
 
   /// Hands the coordinates to whatever maps app is installed.
-  ///
-  /// This is the one place the app wants the internet, and it is also the one
-  /// place it does not matter: a responder either has coverage here or does
-  /// not, and the incident is readable either way.
   Future<void> _openMap(GeoPoint loc) async {
     final uri = Uri.parse('geo:${loc.lat},${loc.lon}?q=${loc.lat},${loc.lon}');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -224,45 +177,265 @@ class _Detail extends StatelessWidget {
   }
 }
 
-class _UpdatesCard extends StatelessWidget {
-  const _UpdatesCard({required this.updates});
+/// The loudest thing on the screen, because it is the most important.
+class _WorseBanner extends StatelessWidget {
+  const _WorseBanner({required this.update});
 
-  final List<IncidentUpdate> updates;
+  final IncidentUpdate update;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.error,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.trending_down, color: scheme.onError),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Situation is getting worse',
+                  style: TextStyle(
+                    color: scheme.onError,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  '${update.text == null ? '' : '${update.text} · '}'
+                  '${_elapsed(update.ts)}',
+                  style: TextStyle(color: scheme.onError, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Category, description and headcount — what a responder needs first.
+class _SituationCard extends StatelessWidget {
+  const _SituationCard({required this.app, required this.message});
+
+  final MeshApp app;
+  final MeshMessage message;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final core = message.core;
+    final colour = categoryColor(core.cat, theme);
+    final received = app.receivedAt(message.id);
+
+    return _Card(
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colour.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(categoryIcon(core.cat), color: colour, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    core.cat?.label ?? 'Unknown',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colour,
+                    ),
+                  ),
+                  // core.ts is the sender's clock, which the spec calls
+                  // unreliable offline — so say which clock each time is from.
+                  Text(
+                    'Sent ${_elapsed(core.ts)}'
+                    '${received == null ? '' : ' · received ${_since(received)}'}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          core.txt ?? 'No description given',
+          style: core.txt == null
+              ? theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor)
+              : theme.textTheme.bodyLarge,
+        ),
+        const Divider(height: 26),
+        Row(
+          children: [
+            Icon(Icons.groups_outlined, size: 20, color: theme.hintColor),
+            const SizedBox(width: 10),
+            Text('People affected', style: theme.textTheme.bodyMedium),
+            const Spacer(),
+            Text(
+              '${core.n ?? '—'}',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationCard extends StatelessWidget {
+  const _LocationCard({
+    required this.app,
+    required this.message,
+    required this.onMap,
+  });
+
+  final MeshApp app;
+  final MeshMessage message;
+  final VoidCallback onMap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = message.core.loc;
+    final hops = message.env.hops;
+
+    return _Card(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.place_outlined, size: 20, color: theme.hintColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: loc == null
+                  ? Text(
+                      'No location attached',
+                      style: theme.textTheme.bodyLarge,
+                    )
+                  : AddressText(point: loc, location: app.location),
+            ),
+            if (loc != null)
+              TextButton(onPressed: onMap, child: const Text('View on Map')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // hops is diagnostic, but it is the only distance cue there is: it
+        // tells a responder roughly how far away the sender might be.
+        Text(
+          '$hops relay hop${hops == 1 ? '' : 's'} from the sender',
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+        ),
+      ],
+    );
+  }
+}
+
+/// One incident, one timeline.
+///
+/// Sender updates and responder replies are separate message types, but that
+/// is an implementation fact, not something a reader cares about. What they
+/// care about is the order: "getting worse" after "help is on the way" means
+/// something different from "getting worse" before it, and two parallel lists
+/// hide exactly that.
+class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({
+    required this.updates,
+    required this.replies,
+    required this.origin,
+  });
+
+  final List<IncidentUpdate> updates;
+  final List<ResponderReply> replies;
+
+  /// This device's identity, so its own replies read as "You".
+  final String origin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final entries = <_Entry>[
+      for (final u in updates)
+        _Entry(
+          ts: u.ts,
+          fromSender: true,
+          icon: updateIcon(u.status),
+          title: u.status?.label ?? 'Unrecognised status',
+          body: u.text,
+          who: 'Sender',
+        ),
+      for (final r in replies)
+        _Entry(
+          ts: r.ts,
+          fromSender: false,
+          icon: Icons.reply,
+          title: r.text,
+          body: null,
+          who: r.from == origin ? 'You' : r.from.substring(0, 6),
+        ),
+    ]..sort((a, b) => b.ts.compareTo(a.ts));
+
     return _Card(
       children: [
         Text(
-          'Sender updates',
+          'Activity',
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 10),
-        // Newest first: the current situation matters more than the history.
-        for (final update in updates.reversed)
+        const SizedBox(height: 12),
+        // Newest first: in an emergency the current state matters more than
+        // reading the thread from the beginning.
+        for (final entry in entries)
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(_iconFor(update.status), size: 18, color: theme.hintColor),
+                Icon(
+                  entry.icon,
+                  size: 18,
+                  color: entry.fromSender
+                      ? theme.colorScheme.error
+                      : Colors.green.shade700,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        update.status?.label ?? 'Unrecognised status',
+                        entry.title,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: entry.fromSender
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
-                      if (update.text != null) Text(update.text!),
+                      if (entry.body != null) Text(entry.body!),
                       Text(
-                        _elapsed(update.ts),
+                        '${entry.who} · ${_elapsed(entry.ts)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.hintColor,
                         ),
@@ -276,52 +449,27 @@ class _UpdatesCard extends StatelessWidget {
       ],
     );
   }
-
-  static IconData _iconFor(UpdateStatus? status) => switch (status) {
-    UpdateStatus.stillHere => Icons.hourglass_empty,
-    UpdateStatus.worse => Icons.trending_down,
-    UpdateStatus.better => Icons.trending_up,
-    UpdateStatus.moved => Icons.directions_walk,
-    null => Icons.help_outline,
-  };
 }
 
-class _RepliesCard extends StatelessWidget {
-  const _RepliesCard({required this.replies});
+class _Entry {
+  const _Entry({
+    required this.ts,
+    required this.fromSender,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.who,
+  });
 
-  final List<ResponderReply> replies;
+  final int ts;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _Card(
-      children: [
-        Text(
-          'Responder replies',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 10),
-        for (final reply in replies)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(reply.text, style: theme.textTheme.bodyLarge),
-                Text(
-                  _elapsed(reply.ts),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
+  /// Which direction this came from, which decides the colour.
+  final bool fromSender;
+
+  final IconData icon;
+  final String title;
+  final String? body;
+  final String who;
 }
 
 class _ReplySheet extends StatefulWidget {
@@ -446,70 +594,6 @@ class _Card extends StatelessWidget {
   }
 }
 
-class _Row extends StatelessWidget {
-  const _Row({
-    required this.icon,
-    this.label,
-    this.child,
-    this.trailing,
-    this.onTrailingTap,
-  }) : assert(label != null || child != null);
-
-  final IconData icon;
-  final String? label;
-  final Widget? child;
-  final String? trailing;
-  final VoidCallback? onTrailingTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.hintColor),
-        const SizedBox(width: 12),
-        Expanded(
-          child: child ?? Text(label!, style: theme.textTheme.bodyLarge),
-        ),
-        if (trailing != null)
-          onTrailingTap == null
-              ? Text(
-                  trailing!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor,
-                  ),
-                )
-              : TextButton(onPressed: onTrailingTap, child: Text(trailing!)),
-      ],
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(value, style: theme.textTheme.headlineSmall),
-      ],
-    );
-  }
-}
-
 String _stateLabel(IncidentState state) => switch (state) {
   IncidentState.open => 'Active',
   IncidentState.acknowledged => 'Acknowledged',
@@ -518,6 +602,13 @@ String _stateLabel(IncidentState state) => switch (state) {
 
 String _elapsed(int unixSeconds) {
   final seconds = DateTime.now().millisecondsSinceEpoch ~/ 1000 - unixSeconds;
+  if (seconds < 60) return '${seconds}s ago';
+  if (seconds < 3600) return '${seconds ~/ 60} min ago';
+  return '${seconds ~/ 3600} h ago';
+}
+
+String _since(DateTime when) {
+  final seconds = DateTime.now().difference(when).inSeconds;
   if (seconds < 60) return '${seconds}s ago';
   if (seconds < 3600) return '${seconds ~/ 60} min ago';
   return '${seconds ~/ 3600} h ago';

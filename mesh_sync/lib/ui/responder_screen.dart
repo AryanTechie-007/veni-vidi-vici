@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../mesh_app.dart';
 import '../messages/mesh_message.dart';
+import 'category_style.dart';
 import 'incident_detail_screen.dart';
 import 'mesh_status_card.dart';
 
@@ -168,7 +169,7 @@ class _IncidentRow extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 4),
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: _colorFor(core.cat, theme),
+          backgroundColor: categoryColor(core.cat, theme),
           child: Text(
             '${core.n ?? '?'}',
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -223,14 +224,6 @@ class _IncidentRow extends StatelessWidget {
     );
   }
 
-  static Color _colorFor(Category? cat, ThemeData theme) => switch (cat) {
-    Category.medical => Colors.red.shade300,
-    Category.trapped => Colors.orange.shade300,
-    Category.fire => Colors.deepOrange.shade300,
-    Category.supplies => Colors.blue.shade300,
-    Category.safe => Colors.green.shade300,
-    null => theme.disabledColor,
-  };
 }
 
 String _elapsed(int unixSeconds) {

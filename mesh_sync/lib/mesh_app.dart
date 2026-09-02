@@ -143,8 +143,18 @@ class MeshApp extends ChangeNotifier {
     return null;
   }
 
+  /// When this device actually received each message, by local clock.
+  ///
+  /// Distinct from `core.ts`, which is the sender's clock and unreliable
+  /// offline. On a store-and-forward mesh an SOS can be minutes old by the
+  /// sender's reckoning and have arrived seconds ago.
+  final Map<String, DateTime> _receivedAt = {};
+
+  DateTime? receivedAt(String id) => _receivedAt[id];
+
   void _record(MeshMessage message) {
     _messages.insert(0, message);
+    _receivedAt[message.id] = DateTime.now();
     if (message.core.type == MessageType.ack && message.core.ref != null) {
       _ackedIds.add(message.core.ref!);
       // An ACK carrying text was written by a person who read the incident,
