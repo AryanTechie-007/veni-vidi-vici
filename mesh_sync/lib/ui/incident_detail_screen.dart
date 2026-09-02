@@ -138,6 +138,9 @@ class _Detail extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          _RepliesCard(replies: app.repliesFor(message.id)),
           const SizedBox(height: 24),
 
           if (closed)
@@ -147,19 +150,16 @@ class _Detail extends StatelessWidget {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: state == IncidentState.acknowledged
-                        ? null
-                        : () => app.acknowledge(message.id),
-                    icon: const Icon(Icons.check),
+                    // A responder device has already ACKed on receipt, so the
+                    // useful action here is a written reply: a person saying
+                    // they have read it, which a device receipt cannot mean.
+                    onPressed: () => _reply(context),
+                    icon: const Icon(Icons.reply),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.green.shade700,
                       minimumSize: const Size.fromHeight(52),
                     ),
-                    label: Text(
-                      state == IncidentState.acknowledged
-                          ? 'Acknowledged'
-                          : 'Acknowledge',
-                    ),
+                    label: const Text('Reply'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -178,6 +178,20 @@ class _Detail extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Sends a written acknowledgement.
+  ///
+  /// Travels as an ordinary ACK, so it also marks the incident acknowledged
+  /// for any device that has not seen the automatic one.
+  Future<void> _reply(BuildContext context) async {
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const _ReplySheet(),
+    );
+    if (text == null || text.isEmpty) return;
+    await app.acknowledge(message.id, txt: text);
   }
 
   /// Closing floods a CANCEL that purges the incident from every device that
@@ -206,6 +220,110 @@ class _Detail extends StatelessWidget {
     if (confirmed == true) {
       await app.cancel(message.id, CancelReason.rescued);
     }
+  }
+}
+
+class _RepliesCard extends StatelessWidget {
+  const _RepliesCard({required this.replies});
+
+  final List<ResponderReply> replies;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _Card(
+      children: [
+        Text('Responder replies', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (replies.isEmpty)
+          Text(
+            'No written reply yet. The automatic acknowledgement only means a '
+            'responder device received this.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          )
+        else
+          for (final reply in replies)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(reply.text, style: theme.textTheme.bodyLarge),
+                  Text(
+                    '${reply.from.substring(0, 6)} · ${_elapsed(reply.ts)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+class _ReplySheet extends StatefulWidget {
+  const _ReplySheet();
+
+  @override
+  State<_ReplySheet> createState() => _ReplySheetState();
+}
+
+class _ReplySheetState extends State<_ReplySheet> {
+  final TextEditingController _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Reply to this incident',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Floods to every device, so the sender sees it even without a '
+            'direct link to you.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _text,
+            autofocus: true,
+            maxLength: kMaxTextLength,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Help is on the way, stay where you are',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context, _text.text.trim()),
+              child: const Text('Send reply'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

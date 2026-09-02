@@ -161,6 +161,7 @@ class _Section extends StatelessWidget {
             IncidentTile(
               message: message,
               state: app.stateOf(message.id),
+              replies: app.repliesFor(message.id),
               peerCount: app.service.peers.length,
               mine: message.core.origin == app.origin,
               onClose: app.stateOf(message.id) == IncidentState.closed
@@ -213,6 +214,7 @@ class IncidentTile extends StatelessWidget {
     super.key,
     required this.message,
     required this.state,
+    required this.replies,
     required this.peerCount,
     required this.mine,
     required this.onClose,
@@ -220,6 +222,10 @@ class IncidentTile extends StatelessWidget {
 
   final MeshMessage message;
   final IncidentState state;
+
+  /// Written replies from responders. A device receipt says a phone got it; a
+  /// reply says a person read it, so it outranks the status line.
+  final List<ResponderReply> replies;
   final int peerCount;
   final bool mine;
   final VoidCallback? onClose;
@@ -287,15 +293,33 @@ class IncidentTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              status,
-              style: TextStyle(
-                color: color,
-                fontWeight: state == IncidentState.acknowledged
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+            if (replies.isNotEmpty)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.reply, size: 14, color: Colors.green.shade700),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      replies.last.text,
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(
+                status,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: state == IncidentState.acknowledged
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
               ),
-            ),
             Text(
               // Elapsed time is shown throughout so a long silence is visible
               // rather than ambiguous. hops is diagnostic only — nothing is

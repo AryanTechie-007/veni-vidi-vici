@@ -55,9 +55,9 @@ enum MessageType {
   final String wire;
 
   static MessageType fromWire(String value) => values.firstWhere(
-        (t) => t.wire == value,
-        orElse: () => MessageType.unknown,
-      );
+    (t) => t.wire == value,
+    orElse: () => MessageType.unknown,
+  );
 }
 
 enum Category {
@@ -110,14 +110,16 @@ class GeoPoint {
   final double? acc;
 
   Map<String, dynamic> toJson() => {
-        'lat': lat,
-        'lon': lon,
-        if (acc != null) 'acc': acc,
-      };
+    'lat': lat,
+    'lon': lon,
+    if (acc != null) 'acc': acc,
+  };
 
   static GeoPoint? fromJson(Object? json) {
     if (json == null) return null;
-    if (json is! Map) throw const MalformedMessageException('loc is not an object');
+    if (json is! Map) {
+      throw const MalformedMessageException('loc is not an object');
+    }
     final lat = _asDouble(json['lat'], 'loc.lat');
     final lon = _asDouble(json['lon'], 'loc.lon');
     if (lat == null || lon == null) {
@@ -128,7 +130,10 @@ class GeoPoint {
 
   @override
   bool operator ==(Object other) =>
-      other is GeoPoint && other.lat == lat && other.lon == lon && other.acc == acc;
+      other is GeoPoint &&
+      other.lat == lat &&
+      other.lon == lon &&
+      other.acc == acc;
 
   @override
   int get hashCode => Object.hash(lat, lon, acc);
@@ -197,20 +202,20 @@ class MessageCore {
   String get typeWire => rawType ?? type.wire;
 
   Map<String, dynamic> toJson() => {
-        'v': v,
-        'id': id,
-        'type': typeWire,
-        'origin': origin,
-        'uid': uid,
-        'seq': seq,
-        'ts': ts,
-        if (loc != null) 'loc': loc!.toJson(),
-        if (cat != null) 'cat': cat!.wire,
-        if (n != null) 'n': n,
-        if (txt != null) 'txt': txt,
-        if (ref != null) 'ref': ref,
-        if (reason != null) 'reason': reason!.wire,
-      };
+    'v': v,
+    'id': id,
+    'type': typeWire,
+    'origin': origin,
+    'uid': uid,
+    'seq': seq,
+    'ts': ts,
+    if (loc != null) 'loc': loc!.toJson(),
+    if (cat != null) 'cat': cat!.wire,
+    if (n != null) 'n': n,
+    if (txt != null) 'txt': txt,
+    if (ref != null) 'ref': ref,
+    if (reason != null) 'reason': reason!.wire,
+  };
 
   factory MessageCore.fromJson(Map<Object?, Object?> json) {
     final id = _asString(json['id'], 'core.id');
@@ -237,7 +242,8 @@ class MessageCore {
     final txt = _asString(json['txt'], 'core.txt');
     if (txt != null && txt.length > kMaxTextLength) {
       throw MalformedMessageException(
-          'core.txt is ${txt.length} chars, max $kMaxTextLength');
+        'core.txt is ${txt.length} chars, max $kMaxTextLength',
+      );
     }
 
     return MessageCore(
@@ -286,9 +292,13 @@ class MessageEnvelope {
     final exp = _asInt(json['exp'], 'env.exp');
     if (hops == null) throw const MalformedMessageException('env.hops missing');
     if (exp == null) throw const MalformedMessageException('env.exp missing');
-    if (hops < 0) throw MalformedMessageException('env.hops is negative: $hops');
+    if (hops < 0) {
+      throw MalformedMessageException('env.hops is negative: $hops');
+    }
     if (hops > kMaxHops) {
-      throw MalformedMessageException('env.hops is $hops, over backstop $kMaxHops');
+      throw MalformedMessageException(
+        'env.hops is $hops, over backstop $kMaxHops',
+      );
     }
     return MessageEnvelope(hops: hops, exp: exp);
   }
@@ -333,7 +343,8 @@ class MeshMessage {
   }) {
     if (txt != null && txt.length > kMaxTextLength) {
       throw MalformedMessageException(
-          'txt is ${txt.length} chars, max $kMaxTextLength');
+        'txt is ${txt.length} chars, max $kMaxTextLength',
+      );
     }
     return MeshMessage(
       core: MessageCore(
@@ -367,7 +378,13 @@ class MeshMessage {
     required int seq,
     required int now,
     required String sosId,
+    String? txt,
   }) {
+    if (txt != null && txt.length > kMaxTextLength) {
+      throw MalformedMessageException(
+        'txt is ${txt.length} chars, max $kMaxTextLength',
+      );
+    }
     return MeshMessage(
       core: MessageCore(
         id: computeId(origin, seq),
@@ -378,6 +395,7 @@ class MeshMessage {
         seq: seq,
         ts: now,
         ref: sosId,
+        txt: txt,
       ),
       env: MessageEnvelope(hops: 0, exp: now + kExpirySeconds),
     );
@@ -415,15 +433,15 @@ class MeshMessage {
   /// The next copy to hand onward. [core] is carried by reference — it is
   /// frozen, so sharing it is the point.
   MeshMessage incrementHops() => MeshMessage(
-        core: core,
-        env: MessageEnvelope(hops: env.hops + 1, exp: env.exp),
-      );
+    core: core,
+    env: MessageEnvelope(hops: env.hops + 1, exp: env.exp),
+  );
 
   Map<String, dynamic> toJson() => {
-        't': 'MSG',
-        'env': env.toJson(),
-        'core': core.toJson(),
-      };
+    't': 'MSG',
+    'env': env.toJson(),
+    'core': core.toJson(),
+  };
 
   Uint8List encode() => Uint8List.fromList(utf8.encode(jsonEncode(toJson())));
 

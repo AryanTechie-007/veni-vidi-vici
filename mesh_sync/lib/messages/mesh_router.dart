@@ -29,8 +29,8 @@ class MeshRouter {
     required this.origin,
     String? uid,
     int Function()? clock,
-  })  : uid = uid ?? origin,
-        _clock = clock ?? _wallClock;
+  }) : uid = uid ?? origin,
+       _clock = clock ?? _wallClock;
 
   final MessageStore store;
   final MeshTransport transport;
@@ -102,8 +102,10 @@ class MeshRouter {
     );
     await _accept(message, receivedAt: now);
     final peers = await transport.broadcast(message.encode());
-    _log('created ${message.core.typeWire} ${message.id} → $peers peer'
-        '${peers == 1 ? '' : 's'}');
+    _log(
+      'created ${message.core.typeWire} ${message.id} → $peers peer'
+      '${peers == 1 ? '' : 's'}',
+    );
     return message;
   }
 
@@ -172,8 +174,10 @@ class MeshRouter {
       relayed.encode(),
       exceptEndpointId: endpointId,
     );
-    _log('relayed ${relayed.core.typeWire} ${relayed.id} '
-        'hops=${relayed.env.hops} → $peers peer${peers == 1 ? '' : 's'}');
+    _log(
+      'relayed ${relayed.core.typeWire} ${relayed.id} '
+      'hops=${relayed.env.hops} → $peers peer${peers == 1 ? '' : 's'}',
+    );
   }
 
   /// Applies the meaning of a message once it is in the store.
@@ -208,8 +212,10 @@ class MeshRouter {
         // what refuses it if a peer offers it again.
         await store.delete(ref);
         onReferencedChanged?.call(ref);
-        _log('CANCEL (${message.core.reason?.wire ?? 'no reason'}) for $ref '
-            '— purged from local storage');
+        _log(
+          'CANCEL (${message.core.reason?.wire ?? 'no reason'}) for $ref '
+          '— purged from local storage',
+        );
 
       case MessageType.unknown:
         // Relayed but never acted on, so newer builds can add types without
@@ -244,9 +250,10 @@ class MeshRouter {
   ///
   /// Normally called automatically the moment an SOS enters a responder's
   /// store — no human tap, so an unattended responder phone still confirms.
-  /// Public so a responder can also acknowledge by hand, for an incident that
-  /// arrived before this device was switched to the responder role.
-  Future<MeshMessage> sendAck(String sosId) async {
+  /// Public so a responder can also acknowledge by hand, and so they can send
+  /// a written reply: with [txt], this is a person saying they have read the
+  /// incident, which is a far stronger signal than a device receipt.
+  Future<MeshMessage> sendAck(String sosId, {String? txt}) async {
     final seq = await store.nextSeq();
     final ack = MeshMessage.createAck(
       origin: origin,
@@ -254,10 +261,14 @@ class MeshRouter {
       seq: seq,
       now: now,
       sosId: sosId,
+      txt: txt,
     );
     await _accept(ack, receivedAt: now);
     final peers = await transport.broadcast(ack.encode());
-    _log('auto-ACK ${ack.id} for $sosId → $peers peer${peers == 1 ? '' : 's'}');
+    _log(
+      '${txt == null ? 'auto-ACK' : 'responder reply'} ${ack.id} '
+      'for $sosId → $peers peer${peers == 1 ? '' : 's'}',
+    );
     return ack;
   }
 
@@ -277,8 +288,10 @@ class MeshRouter {
     );
     await _accept(cancel, receivedAt: now);
     final peers = await transport.broadcast(cancel.encode());
-    _log('CANCEL ${cancel.id} for $sosId (${reason.wire}) → $peers peer'
-        '${peers == 1 ? '' : 's'}');
+    _log(
+      'CANCEL ${cancel.id} for $sosId (${reason.wire}) → $peers peer'
+      '${peers == 1 ? '' : 's'}',
+    );
     return cancel;
   }
 
@@ -320,8 +333,10 @@ class MeshRouter {
         sent++;
       }
     }
-    _log('flushed $sent/${pending.length} held message'
-        '${pending.length == 1 ? '' : 's'} to $peerName');
+    _log(
+      'flushed $sent/${pending.length} held message'
+      '${pending.length == 1 ? '' : 's'} to $peerName',
+    );
   }
 
   /// Drops expired seen entries and messages. Safe to call periodically.
@@ -330,9 +345,7 @@ class MeshRouter {
 
     // Forget flush bookkeeping for messages that no longer exist, so the map
     // cannot outgrow the store.
-    final live = {
-      for (final message in await store.all()) message.id,
-    };
+    final live = {for (final message in await store.all()) message.id};
     for (final sent in _flushedByPeer.values) {
       sent.removeWhere((id) => !live.contains(id));
     }

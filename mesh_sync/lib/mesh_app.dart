@@ -16,6 +16,23 @@ import 'messages/mesh_message.dart';
 import 'messages/mesh_router.dart';
 import 'messages/message_store.dart';
 
+/// A written reply from a responder who read the incident.
+@immutable
+class ResponderReply {
+  const ResponderReply({
+    required this.from,
+    required this.text,
+    required this.ts,
+  });
+
+  /// The responder's origin. There is no name to resolve it to until the
+  /// responder directory is pre-cached.
+  final String from;
+
+  final String text;
+  final int ts;
+}
+
 /// The lifecycle of one incident, as this device understands it.
 enum IncidentState {
   /// Nobody has acknowledged it yet.
@@ -88,15 +105,15 @@ class MeshApp extends ChangeNotifier {
 
   /// SOS messages from other devices — the responder's incident list.
   List<MeshMessage> get incidents => [
-        for (final m in _messages)
-          if (m.core.type == MessageType.sos && m.core.origin != origin) m,
-      ];
+    for (final m in _messages)
+      if (m.core.type == MessageType.sos && m.core.origin != origin) m,
+  ];
 
   /// SOS messages this device sent itself.
   List<MeshMessage> get myMessages => [
-        for (final m in _messages)
-          if (m.core.origin == origin && m.core.type == MessageType.sos) m,
-      ];
+    for (final m in _messages)
+      if (m.core.origin == origin && m.core.type == MessageType.sos) m,
+  ];
 
   /// Looked up by id rather than held by value: a CANCEL can purge a message
   /// while a detail page is open on it.
@@ -111,6 +128,20 @@ class MeshApp extends ChangeNotifier {
     _messages.insert(0, message);
     if (message.core.type == MessageType.ack && message.core.ref != null) {
       _ackedIds.add(message.core.ref!);
+      // An ACK carrying text was written by a person who read the incident,
+      // not emitted by a device on receipt. Worth surfacing on both sides.
+      final txt = message.core.txt;
+      if (txt != null && txt.isNotEmpty) {
+        _repliesByRef
+            .putIfAbsent(message.core.ref!, () => [])
+            .add(
+              ResponderReply(
+                from: message.core.origin,
+                text: txt,
+                ts: message.core.ts,
+              ),
+            );
+      }
     }
     if (message.core.type == MessageType.cancel && message.core.ref != null) {
       // The store purges it and refuses it from peers, exactly as the spec
@@ -166,15 +197,20 @@ class MeshApp extends ChangeNotifier {
     return IncidentState.open;
   }
 
+  /// Written replies, newest last, keyed by the SOS they reference.
+  List<ResponderReply> repliesFor(String sosId) =>
+      List.unmodifiable(_repliesByRef[sosId] ?? const []);
+
   final Set<String> _ackedIds = {};
+  final Map<String, List<ResponderReply>> _repliesByRef = {};
   final Set<String> _closedIds = {};
 
   /// Acknowledges an incident by hand.
   ///
   /// A responder device already ACKs on receipt, so this only matters for an
   /// incident that arrived while this device was not yet a responder.
-  Future<void> acknowledge(String sosId) async {
-    await router.sendAck(sosId);
+  Future<void> acknowledge(String sosId, {String? txt}) async {
+    await router.sendAck(sosId, txt: txt);
     notifyListeners();
   }
 
@@ -190,8 +226,7 @@ class MeshApp extends ChangeNotifier {
     required Category cat,
     required int n,
     String? txt,
-  }) =>
-      router.createSos(cat: cat, n: n, txt: txt);
+  }) => router.createSos(cat: cat, n: n, txt: txt);
 
   @override
   void dispose() {
